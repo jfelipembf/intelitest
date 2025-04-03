@@ -10,7 +10,7 @@ import {
   Modal,
   Platform,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Colors, Fonts, Sizes, CommonStyles } from "../../constants/styles";
 import {
   MaterialIcons,
@@ -20,39 +20,68 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import MyStatusBar from "../../components/myStatusBar";
 import { useNavigation } from "expo-router";
+import { useAuth } from "../../hooks/useAuth";
 
 const monthsList = [
   "Jan",
-  "Feb",
+  "Fev",
   "Mar",
-  "Apr",
-  "May",
+  "Abr",
+  "Mai",
   "Jun",
   "Jul",
-  "Aug",
-  "Sup",
-  "Oct",
+  "Ago",
+  "Set",
+  "Out",
   "Nov",
-  "Des",
+  "Dez",
 ];
 
 const StudentProfileScreen = () => {
 
   const navigation = useNavigation();
+  const { userData } = useAuth();
+  
+  useEffect(() => {
+    console.log("Dados do usuário no perfil:", userData);
+  }, [userData]);
 
-  const [adharNo, setAdharNo] = useState("1234 5698 4569 1578");
-  const [academicYear, setAcademicYear] = useState("2020-2021");
-  const [admissionClass, setAdmissionClass] = useState("XI");
-  const [oldAdmissionNo, setOldAdmissionNo] = useState("A00125");
-  const [dateOfAdmission, setDateOfAdmission] = useState("01 Apr 2018");
-  const [dateOfBirth, setDateOfBirth] = useState("17 October 2002");
+  // Formatação de data de nascimento
+  const formatBirthDate = (birthDateString) => {
+    if (!birthDateString) return "";
+    
+    // Verificar se já está no formato yyyy-mm-dd
+    if (birthDateString.includes('-')) {
+      const [year, month, day] = birthDateString.split('-');
+      return `${day} ${monthsList[parseInt(month)-1]} ${year}`;
+    }
+    
+    return birthDateString;
+  };
+
+  // Dados do estudante
+  const [showBottomSheet, setShowBottomSheet] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarFor, setCalendarFor] = useState("");
-  const [parntMailId, setParntMailId] = useState("parent123@gmail.com");
-  const [motherName, setMotherName] = useState("Jenny Smith");
-  const [fatherName, setFatherName] = useState("Cameron Smith");
-  const [address, setAddress] = useState("Westheimer Rd. Santa Ana, Illinois");
-  const [showBottomSheet, setShowBottomSheet] = useState(false);
+
+  // Dados pessoais
+  const studentName = userData?.personalInfo?.name || "Estudante";
+  const studentClass = userData?.academicInfo?.class || "";
+  const studentGrade = userData?.academicInfo?.grade || "";
+  const studentCPF = userData?.personalInfo?.cpf || "";
+  const studentRegistration = userData?.academicInfo?.registration || "";
+  const studentBirthDate = formatBirthDate(userData?.personalInfo?.birthDate) || "";
+  const studentEmail = userData?.personalInfo?.email || "";
+  const studentPhone = userData?.personalInfo?.phone || "";
+  const academicYear = "2023-2024";
+  
+  // Dados do responsável
+  const guardianName = userData?.guardian?.name || "";
+  const guardianEmail = userData?.guardian?.email || "";
+  
+  // Dados de endereço
+  const fullAddress = userData?.address?.street && userData?.address?.city ? 
+    `${userData?.address?.street}, ${userData?.address?.number} - ${userData?.address?.neighborhood}, ${userData?.address?.city}/${userData?.address?.state}` : "";
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.primaryColor }}>
@@ -79,7 +108,6 @@ const StudentProfileScreen = () => {
             {fatherNameInfo()}
             {addressInfo()}
           </ScrollView>
-          {saveButton()}
         </View>
       </ImageBackground>
       {changeProfilePicOptionsSheet()}
@@ -110,14 +138,14 @@ const StudentProfileScreen = () => {
               style={{ backgroundColor: Colors.whiteColor }}
             >
               <View style={styles.bottomSheetStyle}>
-                <Text style={{ ...Fonts.blackColor18SemiBold }}>Choose Option</Text>
+                <Text style={{ ...Fonts.blackColor18SemiBold }}>Escolher Opção</Text>
                 <View style={{ marginTop: Sizes.fixPadding * 2.0, flexDirection: "row" }}>
                   {changeProfilePicOptionsSort({
                     bgColor: "#009688",
                     icon: (
                       <Entypo name="camera" size={22} color={Colors.whiteColor} />
                     ),
-                    option: "Camera",
+                    option: "Câmera",
                   })}
                   <View style={{ marginHorizontal: Sizes.fixPadding * 3.0 }}>
                     {changeProfilePicOptionsSort({
@@ -129,7 +157,7 @@ const StudentProfileScreen = () => {
                           color={Colors.whiteColor}
                         />
                       ),
-                      option: "Gallery",
+                      option: "Galeria",
                     })}
                   </View>
                   {changeProfilePicOptionsSort({
@@ -141,7 +169,7 @@ const StudentProfileScreen = () => {
                         color={Colors.whiteColor}
                       />
                     ),
-                    option: "Remove\nphoto",
+                    option: "Remover\nfoto",
                   })}
                 </View>
               </View>
@@ -179,36 +207,15 @@ const StudentProfileScreen = () => {
     );
   }
 
-  function saveButton() {
-    return (
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => {
-          navigation.pop();
-        }}
-        style={styles.buttonStyle}
-      >
-        <Text style={{ ...Fonts.whiteColor17Bold }}>Save</Text>
-      </TouchableOpacity>
-    );
-  }
-
   function addressInfo() {
     return (
       <View style={{ margin: Sizes.fixPadding * 2.0 }}>
         <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-          Permanent Address
+          Endereço Permanente
         </Text>
-        <TextInput
-          value={address}
-          onChangeText={(value) => {
-            setAddress(value);
-          }}
-          cursorColor={Colors.primaryColor}
-          selectionColor={Colors.primaryColor}
-          style={styles.textFieldStyle}
-          numberOfLines={1}
-        />
+        <Text style={styles.readOnlyFieldStyle}>
+          {fullAddress || "-"}
+        </Text>
       </View>
     );
   }
@@ -217,18 +224,11 @@ const StudentProfileScreen = () => {
     return (
       <View style={{ marginHorizontal: Sizes.fixPadding * 2.0 }}>
         <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-          Father Name
+          Nome do Responsável
         </Text>
-        <TextInput
-          value={fatherName}
-          onChangeText={(value) => {
-            setFatherName(value);
-          }}
-          cursorColor={Colors.primaryColor}
-          selectionColor={Colors.primaryColor}
-          style={styles.textFieldStyle}
-          numberOfLines={1}
-        />
+        <Text style={styles.readOnlyFieldStyle}>
+          {guardianName || "-"}
+        </Text>
       </View>
     );
   }
@@ -237,18 +237,11 @@ const StudentProfileScreen = () => {
     return (
       <View style={{ margin: Sizes.fixPadding * 2.0 }}>
         <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-          Mother Name
+          Telefone do Responsável
         </Text>
-        <TextInput
-          value={motherName}
-          onChangeText={(value) => {
-            setMotherName(value);
-          }}
-          cursorColor={Colors.primaryColor}
-          selectionColor={Colors.primaryColor}
-          style={styles.textFieldStyle}
-          numberOfLines={1}
-        />
+        <Text style={styles.readOnlyFieldStyle}>
+          {userData?.guardian?.phone || "-"}
+        </Text>
       </View>
     );
   }
@@ -262,48 +255,17 @@ const StudentProfileScreen = () => {
         }}
       >
         <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-          Parent Mail ID
+          E-mail do Responsável
         </Text>
-        <TextInput
-          value={parntMailId}
-          onChangeText={(value) => {
-            setParntMailId(value);
-          }}
-          cursorColor={Colors.primaryColor}
-          selectionColor={Colors.primaryColor}
-          style={styles.textFieldStyle}
-          keyboardType="email-address"
-          numberOfLines={1}
-        />
+        <Text style={styles.readOnlyFieldStyle}>
+          {guardianEmail || "-"}
+        </Text>
       </View>
     );
   }
 
   function calendar() {
-    const handleConfirm = (e, date) => {
-      calendarFor == "birthDate"
-        ? setDateOfBirth(
-          `${date.getUTCDate()} ${monthsList[date.getUTCMonth()]
-          } ${date.getFullYear()}`
-        )
-        : setDateOfAdmission(
-          `${date.getUTCDate()} ${monthsList[date.getUTCMonth()]
-          } ${date.getFullYear()}`
-        );
-      setShowCalendar(false);
-    };
-    return (
-      showCalendar && (
-        <DateTimePicker
-          mode="date"
-          value={new Date()}
-          onChange={handleConfirm}
-          maximumDate={new Date()}
-          accentColor={Colors.primaryColor}
-          style={{ alignSelf: 'center' }}
-        />
-      )
-    );
+    return null; // Removendo o calendário pois não será possível editar
   }
 
   function dateOfAdmissionAndBirthInfo() {
@@ -317,47 +279,19 @@ const StudentProfileScreen = () => {
       >
         <View style={{ flex: 1, marginHorizontal: Sizes.fixPadding }}>
           <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-            Date of Admission
+            Telefone
           </Text>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => {
-              setCalendarFor("admissionDate");
-              setShowCalendar(true);
-            }}
-          >
-            <Text style={{ marginVertical: Sizes.fixPadding - 5.0, }}>
-              {dateOfAdmission}
-            </Text>
-          </TouchableOpacity>
-          <View
-            style={{
-              borderBottomColor: Colors.lightGrayColor,
-              borderBottomWidth: 1.0,
-            }}
-          />
+          <Text style={styles.readOnlyFieldStyle}>
+            {studentPhone || "-"}
+          </Text>
         </View>
         <View style={{ flex: 1, marginHorizontal: Sizes.fixPadding }}>
           <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-            Date of Birth
+            Data de Nascimento
           </Text>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => {
-              setCalendarFor("birthDate");
-              setShowCalendar(true);
-            }}
-          >
-            <Text style={{ marginVertical: Sizes.fixPadding - 5.0 }}>
-              {dateOfBirth}
-            </Text>
-          </TouchableOpacity>
-          <View
-            style={{
-              borderBottomColor: Colors.lightGrayColor,
-              borderBottomWidth: 1.0,
-            }}
-          />
+          <Text style={styles.readOnlyFieldStyle}>
+            {studentBirthDate || "-"}
+          </Text>
         </View>
       </View>
     );
@@ -374,33 +308,19 @@ const StudentProfileScreen = () => {
       >
         <View style={{ flex: 1, marginHorizontal: Sizes.fixPadding }}>
           <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-            Admission Class
+            Série
           </Text>
-          <TextInput
-            value={admissionClass}
-            onChangeText={(value) => {
-              setAdmissionClass(value);
-            }}
-            cursorColor={Colors.primaryColor}
-            selectionColor={Colors.primaryColor}
-            style={styles.textFieldStyle}
-            numberOfLines={1}
-          />
+          <Text style={styles.readOnlyFieldStyle}>
+            {studentGrade || "-"}
+          </Text>
         </View>
         <View style={{ flex: 1, marginHorizontal: Sizes.fixPadding }}>
           <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-            Old Admission No
+            Matrícula
           </Text>
-          <TextInput
-            value={oldAdmissionNo}
-            onChangeText={(value) => {
-              setOldAdmissionNo(value);
-            }}
-            cursorColor={Colors.primaryColor}
-            selectionColor={Colors.primaryColor}
-            style={styles.textFieldStyle}
-            numberOfLines={1}
-          />
+          <Text style={styles.readOnlyFieldStyle}>
+            {studentRegistration || "-"}
+          </Text>
         </View>
       </View>
     );
@@ -417,51 +337,46 @@ const StudentProfileScreen = () => {
       >
         <View style={{ flex: 1, marginHorizontal: Sizes.fixPadding }}>
           <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-            Adhar No
+            CPF
           </Text>
-          <TextInput
-            value={adharNo}
-            onChangeText={(value) => {
-              setAdharNo(value);
-            }}
-            cursorColor={Colors.primaryColor}
-            selectionColor={Colors.primaryColor}
-            style={styles.textFieldStyle}
-            numberOfLines={1}
-          />
+          <Text style={styles.readOnlyFieldStyle}>
+            {studentCPF || "-"}
+          </Text>
         </View>
         <View style={{ flex: 1, marginHorizontal: Sizes.fixPadding }}>
           <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-            Academic Year
+            Ano Acadêmico
           </Text>
-          <TextInput
-            value={academicYear}
-            onChangeText={(value) => {
-              setAcademicYear(value);
-            }}
-            cursorColor={Colors.primaryColor}
-            selectionColor={Colors.primaryColor}
-            style={styles.textFieldStyle}
-            numberOfLines={1}
-          />
+          <Text style={styles.readOnlyFieldStyle}>
+            {academicYear || "-"}
+          </Text>
         </View>
       </View>
     );
   }
 
   function profileInfo() {
+    const userProfileImage = userData?.personalInfo?.profileImage;
+    
     return (
       <View style={styles.profileInfoWrapStyle}>
-        <Image
-          source={require("../../assets/images/students/student1.png")}
-          style={{ width: 75, height: 75, borderRadius: Sizes.fixPadding }}
-        />
+        {userProfileImage ? (
+          <Image
+            source={{ uri: userProfileImage }}
+            style={{ width: 75, height: 75, borderRadius: Sizes.fixPadding }}
+          />
+        ) : (
+          <Image
+            source={require("../../assets/images/students/student1.png")}
+            style={{ width: 75, height: 75, borderRadius: Sizes.fixPadding }}
+          />
+        )}
         <View style={{ flex: 1, marginLeft: Sizes.fixPadding + 5.0 }}>
           <Text numberOfLines={1} style={{ ...Fonts.blackColor18Bold }}>
-            Samantha Smith
+            {studentName}
           </Text>
           <Text style={{ ...Fonts.grayColor16Regular }}>
-            Class XI-A | Roll no: 05
+            {studentGrade} | Turma {studentClass} | Nº: {studentRegistration}
           </Text>
         </View>
         <TouchableOpacity
@@ -495,7 +410,7 @@ const StudentProfileScreen = () => {
             ...Fonts.whiteColor18SemiBold,
           }}
         >
-          My Profile
+          Meu Perfil
         </Text>
       </View>
     );
@@ -535,25 +450,13 @@ const styles = StyleSheet.create({
     margin: Sizes.fixPadding * 2.0,
     padding: Sizes.fixPadding + 2.0,
   },
-  textFieldStyle: {
+  readOnlyFieldStyle: {
     paddingBottom: Sizes.fixPadding - 5.0,
     ...Fonts.blackColor14Medium,
     borderBottomColor: Colors.lightGrayColor,
     borderBottomWidth: 1.0,
-    paddingTop: Platform.OS == 'ios' ? Sizes.fixPadding - 5.0 : 0
-  },
-  buttonStyle: {
-    backgroundColor: Colors.secondaryColor,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: Sizes.fixPadding * 3.0,
-    marginHorizontal: Sizes.fixPadding * 2.0,
-    paddingVertical: Sizes.fixPadding + 5.0,
-    marginBottom: Sizes.fixPadding * 2.0,
-    elevation: 1.0,
-    ...CommonStyles.buttonShadow,
-    borderColor: "#FFAB1B95",
-    borderWidth: 1.0,
+    paddingTop: Platform.OS == 'ios' ? Sizes.fixPadding - 5.0 : 0,
+    marginVertical: Sizes.fixPadding - 5.0,
   },
   changeProfilePicOptionsIconWrapStyle: {
     width: 50.0,

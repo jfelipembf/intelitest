@@ -158,10 +158,6 @@ export const AuthProvider = ({ children }) => {
                 setUserData(null);
               }
               await clearUserFromStorage();
-              Alert.alert(
-                "Acesso não autorizado", 
-                "Esta aplicação é exclusiva para alunos. Entre em contato com sua escola para mais informações."
-              );
             }
           } else {
             // Dados do usuário não encontrados
@@ -359,7 +355,9 @@ export const AuthProvider = ({ children }) => {
 
 // Hook customizado para usar o contexto de autenticação
 export const useAuth = () => {
-  return useContext(AuthContext);
+  const auth = useContext(AuthContext);
+  // Adicionando isConnected como true para evitar verificações de conexão
+  return { ...auth, isConnected: true };
 };
 
 export default useAuth;

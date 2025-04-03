@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   Modal,
 } from "react-native";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { Colors, Fonts, Sizes, CommonStyles } from "../../constants/styles";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -23,7 +23,12 @@ const { width } = Dimensions.get("window");
 const HomeScreen = () => {
 
   const navigation = useNavigation();
-  const { logout } = useAuth();
+  const { logout, userData, user } = useAuth();
+  
+  // Verificar os dados do usuário no console
+  useEffect(() => {
+    console.log("Dados do usuário:", userData);
+  }, [userData]);
 
   const backAction = () => {
     backClickCount == 1 ? BackHandler.exitApp() : _spring();
@@ -54,7 +59,7 @@ const HomeScreen = () => {
       setshowLogoutDialog(false);
       const result = await logout();
       if (result.success) {
-        navigation.push("auth/loginScreen");
+        navigation.replace("auth/loginScreen");
       }
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
@@ -160,7 +165,7 @@ const HomeScreen = () => {
         }}
         style={styles.buttonStyle}
       >
-        <Text style={{ ...Fonts.whiteColor17Bold }}>Join Video Class</Text>
+        <Text style={{ ...Fonts.whiteColor17Bold }}>Entrar na Aula Online</Text>
       </TouchableOpacity>
     );
   }
@@ -171,8 +176,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightPurpleColor,
           icon: require("../../assets/images/icons/syllabus.png"),
-          title: "Syllabus",
-          description: "What to learn",
+          title: "Programa",
+          description: "O que aprender",
           onPress: () => {
             navigation.push("syllabus/syllabusScreen");
           },
@@ -180,8 +185,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightCreamColor,
           icon: require("../../assets/images/icons/assignment.png"),
-          title: "Assignment ",
-          description: "What to learn",
+          title: "Atividades",
+          description: "Tarefas a fazer",
           onPress: () => {
             navigation.push("assignment/assignmentScreen");
           },
@@ -189,8 +194,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightGreenColor,
           icon: require("../../assets/images/icons/calendar.png"),
-          title: "Calendar",
-          description: "View monthly schedule",
+          title: "Calendário",
+          description: "Agenda mensal",
           onPress: () => {
             navigation.push("calender/calenderScreen");
           },
@@ -198,8 +203,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightCyanColor,
           icon: require("../../assets/images/icons/timetable.png"),
-          title: "Time Table",
-          description: "View daily schedule",
+          title: "Horários",
+          description: "Agenda diária",
           onPress: () => {
             navigation.push("timeTable/timeTableScreen");
           },
@@ -207,8 +212,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightPurpleColor,
           icon: require("../../assets/images/icons/test.png"),
-          title: "Test",
-          description: "What to learn",
+          title: "Provas",
+          description: "Avaliações",
           onPress: () => {
             navigation.push("test/testScreen");
           },
@@ -216,8 +221,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightCreamColor,
           icon: require("../../assets/images/icons/progressCard.png"),
-          title: "Progress Card",
-          description: "What to learn",
+          title: "Boletim",
+          description: "Notas e desempenho",
           onPress: () => {
             navigation.push("progressCard/progressCardScreen");
           },
@@ -225,8 +230,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightGreenColor,
           icon: require("../../assets/images/icons/leaveApplication.png"),
-          title: "Leave Application",
-          description: "What to learn",
+          title: "Pedido de Ausência",
+          description: "Solicitar folga",
           onPress: () => {
             navigation.push("leaveApplication/leaveApplicationScreen");
           },
@@ -234,8 +239,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightCyanColor,
           icon: require("../../assets/images/icons/gallery.png"),
-          title: "School Gallery",
-          description: "About school",
+          title: "Galeria da Escola",
+          description: "Fotos e eventos",
           onPress: () => {
             navigation.push("schoolGallery/schoolGalleryScreen");
           },
@@ -243,8 +248,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightPurpleColor,
           icon: require("../../assets/images/icons/doubt.png"),
-          title: "Ask Doubts",
-          description: "What to learn",
+          title: "Tirar Dúvidas",
+          description: "Pergunte ao professor",
           onPress: () => {
             navigation.push("askDoubts/askDoubtsScreen");
           },
@@ -252,8 +257,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightCreamColor,
           icon: require("../../assets/images/icons/faculties.png"),
-          title: "Faculties",
-          description: "List of teacher",
+          title: "Professores",
+          description: "Lista de docentes",
           onPress: () => {
             navigation.push("faculties/facultiesScreen");
           },
@@ -261,8 +266,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightGreenColor,
           icon: require("../../assets/images/icons/message.png"),
-          title: "Messages",
-          description: "All conversation",
+          title: "Mensagens",
+          description: "Todas conversas",
           onPress: () => {
             navigation.push("messages/messagesScreen");
           },
@@ -270,8 +275,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightCyanColor,
           icon: require("../../assets/images/icons/support.png"),
-          title: "Support",
-          description: "Know about us",
+          title: "Suporte",
+          description: "Saiba mais sobre nós",
           onPress: () => {
             navigation.push("support/supportScreen");
           },
@@ -279,8 +284,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightPurpleColor,
           icon: require("../../assets/images/icons/lock.png"),
-          title: "Change Password",
-          description: "What to learn",
+          title: "Mudar Senha",
+          description: "Alterar sua senha",
           onPress: () => {
             navigation.push("changePassword/changePasswordScreen");
           },
@@ -288,8 +293,8 @@ const HomeScreen = () => {
         {optionSort({
           bgColor: Colors.lightCreamColor,
           icon: require("../../assets/images/icons/logout.png"),
-          title: "Logout",
-          description: "Logout from application",
+          title: "Sair",
+          description: "Encerrar sessão",
           onPress: () => {
             setshowLogoutDialog(true);
           },
@@ -329,7 +334,7 @@ const HomeScreen = () => {
     return (
       <View style={styles.attendanceAndFeeInfoWrapStyle}>
         {attendanceAndFeeInfoSort({
-          title: "Attendance",
+          title: "Frequência",
           value: "80.49%",
           bgColor: Colors.lightYellowColor,
           icon: require("../../assets/images/icons/attendance.png"),
@@ -338,8 +343,8 @@ const HomeScreen = () => {
           },
         })}
         {attendanceAndFeeInfoSort({
-          title: "Fees Due",
-          value: "₹ 6500",
+          title: "Mensalidade",
+          value: "R$ 650",
           bgColor: Colors.lightPinkColor,
           icon: require("../../assets/images/icons/fees.png"),
           onPress: () => {
@@ -393,6 +398,13 @@ const HomeScreen = () => {
   }
 
   function header() {
+    // Obter dados do usuário do context
+    const userName = userData?.personalInfo?.name || "Estudante";
+    const userClass = userData?.academicInfo?.class || "";
+    const userGrade = userData?.academicInfo?.grade || "";
+    const userRegistration = userData?.academicInfo?.registration || "N/A";
+    const userProfileImage = userData?.personalInfo?.profileImage;
+    
     return (
       <View style={styles.headerWrapStyle}>
         <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
@@ -402,14 +414,21 @@ const HomeScreen = () => {
               navigation.push("studentProfile/studentProfileScreen");
             }}
           >
-            <Image
-              source={require("../../assets/images/students/student1.png")}
-              style={styles.userImageStyle}
-            />
+            {userProfileImage ? (
+              <Image
+                source={{ uri: userProfileImage }}
+                style={styles.userImageStyle}
+              />
+            ) : (
+              <Image
+                source={require("../../assets/images/students/student1.png")}
+                style={styles.userImageStyle}
+              />
+            )}
           </TouchableOpacity>
           <View style={{ flex: 1, marginHorizontal: Sizes.fixPadding * 2.0 }}>
             <Text numberOfLines={1} style={{ ...Fonts.whiteColor18SemiBold }}>
-              Hello, Samantha
+              Olá, {userName}
             </Text>
             <Text
               style={{
@@ -418,7 +437,7 @@ const HomeScreen = () => {
                 color: "#ffffff60",
               }}
             >
-              Class XI | Roll no: 05
+              {userGrade} | Turma {userClass} | Nº: {userRegistration}
             </Text>
           </View>
         </View>

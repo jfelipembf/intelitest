@@ -26,7 +26,7 @@ const { width } = Dimensions.get("window");
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-  const { login, authError, loading, isConnected } = useAuth();
+  const { login, authError, loading } = useAuth();
 
   const [backClickCount, setBackClickCount] = useState(0);
   const [email, setEmail] = useState("");
@@ -93,15 +93,6 @@ const LoginScreen = () => {
   );
 
   const handleLogin = async () => {
-    // Verificar conexão com a internet
-    if (!isConnected) {
-      Alert.alert(
-        "Sem conexão",
-        "Verifique sua conexão com a internet e tente novamente."
-      );
-      return;
-    }
-
     // Validar campos antes de tentar login
     if (!email) {
       Alert.alert("Erro", "Por favor, informe seu e-mail");
@@ -326,12 +317,6 @@ const LoginScreen = () => {
           </View>
           
           {LoginButton}
-
-          {!isConnected && (
-            <Text style={styles.offlineTextStyle}>
-              Você está offline. Verifique sua conexão com a internet.
-            </Text>
-          )}
         </ScrollView>
       </View>
       {ExitInfo}
