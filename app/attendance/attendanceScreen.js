@@ -8,172 +8,15 @@ import {
 import React, { useState } from "react";
 import { Colors, Fonts, Sizes } from "../../constants/styles";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Calendar } from "react-native-calendars";
+import { Calendar, LocaleConfig } from "react-native-calendars";
+import { CALENDAR_LOCALE_CONFIG, ATTENDANCE_TYPES, convertMonthEnToPt, padZero } from "../../constants/dateTime";
+import { markedDates } from "../../constants/mockData";
 import MyStatusBar from "../../components/myStatusBar";
 import { useNavigation } from "expo-router";
 
-const markedDates = [
-  {
-    festivalAndHoliDays: {
-      "2026-01-25": { selected: true, selectedColor: Colors.greenColor },
-      "2026-01-26": { selected: true, selectedColor: Colors.greenColor },
-    },
-    absentDays: {
-      "2026-01-18": { selected: true, selectedColor: Colors.redColor },
-      "2026-01-19": { selected: true, selectedColor: Colors.redColor },
-    },
-    halfDays: {
-      "2026-01-07": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2026-02-25": { selected: true, selectedColor: Colors.greenColor },
-      "2026-02-07": { selected: true, selectedColor: Colors.greenColor },
-    },
-    absentDays: {
-      "2026-02-10": { selected: true, selectedColor: Colors.redColor },
-      "2026-02-11": { selected: true, selectedColor: Colors.redColor },
-    },
-    halfDays: {
-      "2026-02-04": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2026-03-25": { selected: true, selectedColor: Colors.greenColor },
-      "2026-03-07": { selected: true, selectedColor: Colors.greenColor },
-    },
-    absentDays: {
-      "2026-03-10": { selected: true, selectedColor: Colors.redColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2026-04-25": { selected: true, selectedColor: Colors.greenColor },
-    },
-    absentDays: {
-      "2026-04-10": { selected: true, selectedColor: Colors.redColor },
-      "2026-04-11": { selected: true, selectedColor: Colors.redColor },
-    },
-    halfDays: {
-      "2026-04-04": { selected: true, selectedColor: Colors.secondaryColor },
-      "2026-04-07": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2026-05-25": { selected: true, selectedColor: Colors.greenColor },
-    },
-    halfDays: {
-      "2026-05-04": { selected: true, selectedColor: Colors.secondaryColor },
-      "2026-05-08": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },  
-  {
-    festivalAndHoliDays: {
-      "2025-01-06": { selected: true, selectedColor: Colors.greenColor },
-      "2025-01-21": { selected: true, selectedColor: Colors.greenColor },
-    },
-    halfDays: {
-      "2025-01-04": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2025-02-11": { selected: true, selectedColor: Colors.greenColor },
-      "2025-02-08": { selected: true, selectedColor: Colors.greenColor },
-    },
-    halfDays: {
-      "2025-02-22": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2025-03-06": { selected: true, selectedColor: Colors.greenColor },
-      "2025-03-24": { selected: true, selectedColor: Colors.greenColor },
-    },
-    halfDays: {
-      "2025-03-22": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2025-04-08": { selected: true, selectedColor: Colors.greenColor },
-      "2025-04-24": { selected: true, selectedColor: Colors.greenColor },
-    },
-    halfDays: {
-      "2025-04-05": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2025-05-08": { selected: true, selectedColor: Colors.greenColor },
-      "2025-05-19": { selected: true, selectedColor: Colors.greenColor },
-    },
-    halfDays: {
-      "2025-05-31": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2025-06-27": { selected: true, selectedColor: Colors.greenColor },
-    },
-    halfDays: {
-      "2025-06-05": { selected: true, selectedColor: Colors.secondaryColor },
-      "2025-06-07": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2025-07-14": { selected: true, selectedColor: Colors.greenColor },
-      "2025-07-26": { selected: true, selectedColor: Colors.greenColor },
-      "2025-07-31": { selected: true, selectedColor: Colors.greenColor },
-    },
-    halfDays: {
-      "2025-07-10": { selected: true, selectedColor: Colors.secondaryColor },
-      "2025-07-24": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2025-08-25": { selected: true, selectedColor: Colors.greenColor },
-      "2025-08-26": { selected: true, selectedColor: Colors.greenColor },
-    },
-    halfDays: {
-      "2025-08-07": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    halfDays: {
-      "2025-09-07": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2025-10-16": { selected: true, selectedColor: Colors.greenColor },
-    },
-    halfDays: {
-      "2025-10-07": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2025-11-16": { selected: true, selectedColor: Colors.greenColor },
-      "2025-11-20": { selected: true, selectedColor: Colors.greenColor },
-      "2025-11-25": { selected: true, selectedColor: Colors.greenColor },
-    },
-    halfDays: {
-      "2025-11-04": { selected: true, selectedColor: Colors.secondaryColor },
-    },
-  },
-  {
-    festivalAndHoliDays: {
-      "2025-12-06": { selected: true, selectedColor: Colors.greenColor },
-      "2025-12-12": { selected: true, selectedColor: Colors.greenColor },
-    },
-  },
-];
+// Configuração de localização para português
+LocaleConfig.locales['pt-br'] = CALENDAR_LOCALE_CONFIG;
+LocaleConfig.defaultLocale = 'pt-br';
 
 const AttendanceScreen = () => {
 
@@ -214,7 +57,7 @@ const AttendanceScreen = () => {
           : 0
         : 0;
     return infoSort({
-      title: "Half Day",
+      title: ATTENDANCE_TYPES.HALF_DAY.title,
       count: count,
       bgColor: Colors.lightSecondaryColor,
       color: Colors.secondaryColor,
@@ -233,7 +76,7 @@ const AttendanceScreen = () => {
     return (
       <View style={{ marginVertical: Sizes.fixPadding + 5.0 }}>
         {infoSort({
-          title: "Festival & Holidays",
+          title: ATTENDANCE_TYPES.HOLIDAY.title,
           count: count,
           bgColor: Colors.lightGreenColor,
           color: Colors.greenColor,
@@ -251,7 +94,7 @@ const AttendanceScreen = () => {
           : 0
         : 0;
     return infoSort({
-      title: "Absent",
+      title: ATTENDANCE_TYPES.ABSENT.title,
       count: count,
       bgColor: Colors.lightRedColor,
       color: Colors.redColor,
@@ -272,7 +115,7 @@ const AttendanceScreen = () => {
           </Text>
           <View style={{ backgroundColor: bgColor, ...styles.countWrapStyle }}>
             <Text style={{ ...textStyle }}>
-              {count.toString().length == 1 ? `0${count}` : count}
+              {padZero(count)}
             </Text>
           </View>
         </View>
@@ -281,10 +124,7 @@ const AttendanceScreen = () => {
   }
 
   function getCurrentMonthIndex() {
-    var currentMonth =
-      (new Date().getMonth() + 1).toString().length == 1
-        ? `0${new Date().getMonth() + 1}`
-        : new Date().getMonth() + 1;
+    const currentMonth = padZero(new Date().getMonth() + 1);
     var currentYearWithMonth = `${new Date().getFullYear()}-${currentMonth}`;
     const index = markedDates.findIndex((item) => {
       if (
@@ -320,6 +160,7 @@ const AttendanceScreen = () => {
             : null),
         }
         : {};
+    
     return (
       <View style={{ margin: Sizes.fixPadding * 2.0 }}>
         <Calendar
@@ -328,9 +169,13 @@ const AttendanceScreen = () => {
           firstDay={0}
           markedDates={markedDays}
           renderHeader={(date) => {
+            const mesAbreviado = date.toString().slice(4, 7);
+            const mes = convertMonthEnToPt(mesAbreviado);
+            const ano = date.toString().slice(11, 15);
+            
             return (
               <Text style={{ ...Fonts.blackColor18Medium }}>
-                {date.toString().slice(4, 8)} {date.toString().slice(11, 16)}
+                {mes} {ano}
               </Text>
             );
           }}
@@ -341,8 +186,9 @@ const AttendanceScreen = () => {
             textDayHeaderFontFamily: "Inter-Regular",
             arrowColor: Colors.blackColor,
             calendarBackground: "transparent",
-            textSectionTitleColor: Colors.blackColor,
+            textSectionTitleColor: Colors.blackColor
           }}
+          locale={'pt-br'}
           onMonthChange={(month) => {
             const index = markedDates.findIndex((item) => {
               if (
@@ -383,7 +229,7 @@ const AttendanceScreen = () => {
             ...Fonts.whiteColor18SemiBold,
           }}
         >
-          Attendance
+          Frequência
         </Text>
       </View>
     );

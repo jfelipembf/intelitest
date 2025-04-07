@@ -25,11 +25,7 @@ const HomeScreen = () => {
   const navigation = useNavigation();
   const { logout, userData, user } = useAuth();
   
-  // Verificar os dados do usuário no console
-  useEffect(() => {
-    console.log("Dados do usuário:", userData);
-  }, [userData]);
-
+  //
   const backAction = () => {
     backClickCount == 1 ? BackHandler.exitApp() : _spring();
     return true;
@@ -82,7 +78,6 @@ const HomeScreen = () => {
             {attendanceAndFeesInfo()}
             {options()}
           </ScrollView>
-          {joinVideoClassButton()}
         </View>
       </ImageBackground>
       {logoutDialog()}
@@ -153,20 +148,6 @@ const HomeScreen = () => {
           </View>
         </TouchableOpacity>
       </Modal>
-    );
-  }
-
-  function joinVideoClassButton() {
-    return (
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => {
-          navigation.push("videoClass/videoClassScreen");
-        }}
-        style={styles.buttonStyle}
-      >
-        <Text style={{ ...Fonts.whiteColor17Bold }}>Entrar na Aula Online</Text>
-      </TouchableOpacity>
     );
   }
 
@@ -343,12 +324,12 @@ const HomeScreen = () => {
           },
         })}
         {attendanceAndFeeInfoSort({
-          title: "Mensalidade",
-          value: "R$ 650",
+          title: "Pontos",
+          value: "1250",
           bgColor: Colors.lightPinkColor,
-          icon: require("../../assets/images/icons/fees.png"),
+          icon: require("../../assets/images/icons/progressCard.png"),
           onPress: () => {
-            navigation.push("feesDue/feesDueScreen");
+            navigation.push("progressCard/progressCardScreen");
           },
         })}
       </View>

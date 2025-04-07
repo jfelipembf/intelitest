@@ -8,242 +8,262 @@ import { useNavigation } from 'expo-router';
 const questionsList = [
     {
         id: '1',
-        question: 'Which Economist divided Economics in two branches of micro and macro on the basis of economic activity?',
+        question: 'Qual economista dividiu a Economia em dois ramos, micro e macro, com base na atividade econômica?',
         options: [
             'Marshall',
             'Ricardo',
             'Ragnar Frish',
-            'None of these'
+            'Nenhuma das alternativas',
+            'John Maynard Keynes'
         ],
-        correctAnswer: 'None of these',
+        correctAnswer: 'Nenhuma das alternativas',
         userAnswer: '',
     },
     {
         id: '2',
-        question: 'Which of the following is studied under Micro Economics?',
+        question: 'Qual das seguintes áreas é estudada na Microeconomia?',
         options: [
-            'Individual unit',
-            'Economic Aggregate',
-            'National Income',
-            'None of these'
+            'Unidade individual',
+            'Agregado econômico',
+            'Renda nacional',
+            'Nenhuma das alternativas',
+            'Todos os sistemas econômicos'
         ],
-        correctAnswer: 'None of these',
+        correctAnswer: 'Nenhuma das alternativas',
         userAnswer: '',
     },
     {
         id: '3',
-        question: '‘Micros’, which means ‘Small’ belongs to:',
+        question: 'O termo "Micros", que significa "Pequeno", pertence a qual idioma:',
         options: [
-            'Arabian word',
-            'Greek word',
-            'German word',
-            'English worde'
+            'Palavra árabe',
+            'Palavra grega',
+            'Palavra alemã',
+            'Palavra inglesa',
+            'Palavra latina'
         ],
-        correctAnswer: 'Greek word',
+        correctAnswer: 'Palavra grega',
         userAnswer: '',
     },
     {
         id: '4',
-        question: 'Which of the following statement is true?',
+        question: 'Qual das seguintes afirmações é verdadeira?',
         options: [
-            'Human wants are infinite',
-            'Resources are limited',
-            'Scarcity problem gives birth',
-            'All of these'
+            'Os desejos humanos são infinitos',
+            'Os recursos são limitados',
+            'O problema da escassez dá origem',
+            'Todas as alternativas',
+            'Nenhuma das alternativas'
         ],
-        correctAnswer: 'Scarcity problem gives birth',
+        correctAnswer: 'O problema da escassez dá origem',
         userAnswer: '',
     },
     {
         id: '5',
-        question: 'Which is a central problem of an economy?',
+        question: 'Qual é um problema central de uma economia?',
         options: [
-            'Allocation of Resources',
-            'Optimum Utilisation of Resources',
-            'Economic Development',
-            'All of these'
+            'Alocação de recursos',
+            'Utilização ótima de recursos',
+            'Desenvolvimento econômico',
+            'Todas as alternativas',
+            'Nenhuma das alternativas'
         ],
-        correctAnswer: 'All of these',
+        correctAnswer: 'Todas as alternativas',
         userAnswer: '',
     },
     {
         id: '6',
-        question: 'Which of the following Is a type of economic activities?',
+        question: 'Qual dos seguintes é um tipo de atividade econômica?',
         options: [
-            'Production',
-            'Consumption',
-            'Exchange and Investment',
-            'All of these'
+            'Produção',
+            'Consumo',
+            'Troca e Investimento',
+            'Todas as alternativas',
+            'Nenhuma das alternativas'
         ],
-        correctAnswer: 'All of these',
+        correctAnswer: 'Todas as alternativas',
         userAnswer: '',
     },
     {
         id: '7',
-        question: 'To which factor, economic problem is basically related to:',
+        question: 'A qual fator o problema econômico está basicamente relacionado:',
         options: [
-            'Choice',
-            'Consumer’s Selection',
-            'Firm Selection',
-            'None of these'
+            'Escolha',
+            'Seleção do consumidor',
+            'Seleção da empresa',
+            'Nenhuma das alternativas',
+            'Todas as alternativas'
         ],
-        correctAnswer: 'Choice',
+        correctAnswer: 'Escolha',
         userAnswer: '',
     },
     {
         id: '8',
-        question: 'Economy may be classified as:',
+        question: 'A economia pode ser classificada como:',
         options: [
-            'Capitalist',
-            'Socialist',
-            'Mixed',
-            'All of these'
+            'Capitalista',
+            'Socialista',
+            'Mista',
+            'Todas as alternativas',
+            'Nenhuma das alternativas'
         ],
-        correctAnswer: 'All of these',
+        correctAnswer: 'Todas as alternativas',
         userAnswer: '',
     },
     {
         id: '9',
-        question: 'Which economy has a co-existence of private and public sectors?',
+        question: 'Qual economia tem coexistência de setores públicos e privados?',
         options: [
-            'Capitalist',
-            'Socialist',
-            'Mixed',
-            'All of these'
+            'Capitalista',
+            'Socialista',
+            'Mista',
+            'Todas as alternativas',
+            'Tradicional'
         ],
-        correctAnswer: 'Mixed',
+        correctAnswer: 'Mista',
         userAnswer: '',
     },
     {
         id: '10',
-        question: 'The main objective of a socialist economy is…….',
+        question: 'O principal objetivo de uma economia socialista é:',
         options: [
-            'Maximum production',
-            'Economic freedom',
-            'Earning profit',
-            'Maximum public welfare'
+            'Produção máxima',
+            'Liberdade econômica',
+            'Obtenção de lucro',
+            'Bem-estar público máximo',
+            'Bem-estar público mínimo'
         ],
-        correctAnswer: 'Maximum public welfare',
+        correctAnswer: 'Bem-estar público máximo',
         userAnswer: '',
     },
     {
         id: '11',
-        question: 'In which economy decisions are taken on the basis of price mechanism?',
+        question: 'Em qual economia as decisões são tomadas com base no mecanismo de preços?',
         options: [
-            'Socialist',
-            'Capitalist',
-            'Mixed',
-            'All of these'
+            'Socialista',
+            'Capitalista',
+            'Mista',
+            'Todas as alternativas',
+            'Economia de comando'
         ],
-        correctAnswer: 'Capitalist',
+        correctAnswer: 'Capitalista',
         userAnswer: '',
     },
     {
         id: '12',
-        question: 'Production Possibility Curve is:',
+        question: 'A Curva de Possibilidade de Produção é:',
         options: [
-            'Concave to the axis',
-            'Convex to the axis',
-            'Parallel to the axis',
-            'Vertical to the axis'
+            'Côncava ao eixo',
+            'Convexa ao eixo',
+            'Paralela ao eixo',
+            'Vertical ao eixo',
+            'Horizontal ao eixo'
         ],
-        correctAnswer: 'Concave to the axis',
+        correctAnswer: 'Côncava ao eixo',
         userAnswer: '',
     },
     {
         id: '13',
-        question: 'Mention the name of the curve which shows economic problem:',
+        question: 'Mencione o nome da curva que mostra o problema econômico:',
         options: [
-            'Production Curve',
-            'Demand Curve',
-            'Indifference Curve',
-            'Production Possibility Curve'
+            'Curva de Produção',
+            'Curva de Demanda',
+            'Curva de Indiferença',
+            'Curva de Possibilidade de Produção',
+            'Curva de Oferta'
         ],
-        correctAnswer: 'Production Possibility Curve',
+        correctAnswer: 'Curva de Possibilidade de Produção',
         userAnswer: '',
     },
     {
         id: '14',
-        question: 'Which of the following is studied under Macro Economics?',
+        question: 'Qual dos seguintes é estudado em Macroeconomia?',
         options: [
-            'National Income',
-            'Full. Employment',
-            'Total Production',
-            'All of these'
+            'Renda Nacional',
+            'Pleno Emprego',
+            'Produção Total',
+            'Todas as alternativas',
+            'Nenhuma das alternativas'
         ],
-        correctAnswer: 'All of these',
+        correctAnswer: 'Todas as alternativas',
         userAnswer: '',
     },
     {
         id: '15',
-        question: 'Which of the following Is a branch of Micro Economics?',
+        question: 'Qual das seguintes é uma área da Microeconomia?',
         options: [
-            'Product Price Determination',
-            'Factor Price Determination',
-            'Economic Welfare',
-            'All of these'
+            'Determinação de Preço de Produto',
+            'Determinação de Preço de Fator',
+            'Bem-estar Econômico',
+            'Todas as alternativas',
+            'Nenhuma das alternativas'
         ],
-        correctAnswer: 'All of these',
+        correctAnswer: 'Todas as alternativas',
         userAnswer: '',
     },
     {
         id: '16',
-        question: 'Which of the following is a source of production?',
+        question: 'Qual das seguintes é uma fonte de produção?',
         options: [
-            'Land',
-            'Labour',
+            'Terra',
+            'Trabalho',
             'Capital',
-            'All of these'
+            'Todas as alternativas',
+            'Empreendedor'
         ],
-        correctAnswer: 'All of these',
+        correctAnswer: 'Todas as alternativas',
         userAnswer: '',
     },
     {
         id: '17',
-        question: 'Who said, “Economics is a science of wealth.”',
+        question: 'Quem disse: "A Economia é uma ciência da riqueza"?',
         options: [
             'Marshall',
             'Robbins',
             'Adam Smith',
-            'J.K. Mehta'
+            'J.K. Mehta',
+            'David Ricardo'
         ],
         correctAnswer: 'Adam Smith',
         userAnswer: '',
     },
     {
         id: '18',
-        question: '“Economics is a science of logic.’’ Who said it.',
+        question: 'A Economia é uma ciência da lógica. Quem disse isso?',
         options: [
             'Hicks',
             'Keynes',
             'Robbins',
-            'Marshall'
+            'Marshall',
+            'Pigou'
         ],
         correctAnswer: 'Robbins',
         userAnswer: '',
     },
     {
         id: '19',
-        question: 'Micro Economics includes:',
+        question: 'A Microeconomia inclui:',
         options: [
-            'Individual unit',
-            'Small units',
-            'Individual price determination',
-            'All of these'
+            'Unidade individual',
+            'Pequenas unidades',
+            'Determinação individual de preços',
+            'Todas as alternativas',
+            'Nenhuma das alternativas'
         ],
-        correctAnswer: 'All of these',
+        correctAnswer: 'Todas as alternativas',
         userAnswer: '',
     },
     {
         id: '20',
-        question: 'On which base structure of economic problems has been installed?',
+        question: 'Em qual base a estrutura dos problemas econômicos foi estabelecida?',
         options: [
-            'Unlimited Wants',
-            'Limited Resources',
-            'Both (a) and (b)',
-            'None of the above'
+            'Desejos ilimitados',
+            'Recursos limitados',
+            'Ambos (a) e (b)',
+            'Nenhuma das alternativas',
+            'Todos os fatores econômicos'
         ],
-        correctAnswer: 'Both (a) and (b)',
+        correctAnswer: 'Ambos (a) e (b)',
         userAnswer: '',
     },
 ];
@@ -394,7 +414,7 @@ const TestStartScreen = () => {
                                             color: stylingSort({ item: item }) == Colors.lightGrayColor ? Colors.grayColor : stylingSort({ item: item })
                                         }}
                                     >
-                                        {index == 0 ? 'A.' : index == 1 ? 'B.' : index == 2 ? 'C.' : 'D.'}
+                                        {index == 0 ? 'A.' : index == 1 ? 'B.' : index == 2 ? 'C.' : index == 3 ? 'D.' : 'E.'}
                                     </Text>
                                     <Text
                                         style={{
@@ -426,7 +446,7 @@ const TestStartScreen = () => {
                         style={styles.nextAndViewScoreStyle}
                     >
                         <Text style={{ ...Fonts.secondaryColor16SemiBold }}>
-                            {selectedQuestionIndex == questions.length - 1 ? 'View Score' : 'Next'}
+                            {selectedQuestionIndex == questions.length - 1 ? 'Ver Resultado' : 'Próxima'}
                         </Text>
                         <MaterialIcons
                             name='arrow-forward'
@@ -444,7 +464,7 @@ const TestStartScreen = () => {
         return (
             <View style={{ marginHorizontal: Sizes.fixPadding * 2.0, marginTop: Sizes.fixPadding * 3.0, }}>
                 <Text style={{ marginBottom: Sizes.fixPadding + 3.0, ...Fonts.whiteColor20Medium }}>
-                    Question {selectedQuestionIndex + 1}
+                    Questão {selectedQuestionIndex + 1}
                     <Text style={{ ...Fonts.whiteColor13Regular }}>
                         { } /{questionsList.length}
                     </Text>
@@ -461,7 +481,7 @@ const TestStartScreen = () => {
             <View style={styles.progressIndicatorWrapStyle}>
                 <View style={{ flex: (minute / totalExamMinute), ...styles.timingIndicatorStyle, }} />
                 <Text style={styles.timingTextStyle}>
-                    {displayMinute}:{displaySecond} {minute == 0 ? 'sec' : 'min'}
+                    {displayMinute}:{displaySecond} {minute == 0 ? 'seg' : 'min'}
                 </Text>
             </View>
         )
@@ -472,7 +492,7 @@ const TestStartScreen = () => {
             <View style={styles.headerWrapStyle}>
                 <MaterialIcons name="arrow-back" size={24} color={Colors.whiteColor} onPress={() => { navigation.pop() }} />
                 <Text style={{ marginLeft: Sizes.fixPadding * 2.0, ...Fonts.whiteColor18SemiBold }}>
-                    Economics Test
+                    Teste de Economia
                 </Text>
             </View>
         )
@@ -492,7 +512,7 @@ const styles = StyleSheet.create({
         position: 'absolute',
         padding: Sizes.fixPadding,
         ...Fonts.whiteColor14Medium,
-        transform: [{ rotate: '180deg' }],
+        transform: [],
         alignSelf: 'center',
     },
     timingIndicatorStyle: {
@@ -507,9 +527,9 @@ const styles = StyleSheet.create({
         borderColor: Colors.whiteColor,
         marginHorizontal: Sizes.fixPadding * 2.0,
         height: 38.0,
-        flexDirection: 'row',
+        flexDirection: 'row-reverse',
         overflow: 'hidden',
-        transform: [{ rotate: '-180deg' }]
+        transform: [],
     },
     paperLayerStyle: {
         position: 'absolute',

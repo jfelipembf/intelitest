@@ -37,17 +37,17 @@ const TestResultScreen = () => {
             {gradePercentageInfo()}
             {greatMessage()}
             {resultSort({
-              title: "Correct Answers",
+              title: "Respostas Corretas",
               result: "17(85%)",
               borderColor: Colors.darkGreenColor,
             })}
             {resultSort({
-              title: "Skipped Answers",
+              title: "Respostas Puladas",
               result: "01(5%)",
               borderColor: Colors.secondaryColor,
             })}
             {resultSort({
-              title: "Wrong Answers",
+              title: "Respostas Erradas",
               result: "02(10%)",
               borderColor: Colors.redColor,
             })}
@@ -72,7 +72,7 @@ const TestResultScreen = () => {
           }}
         >
           <Text numberOfLines={1} style={{ ...Fonts.whiteColor17Bold }}>
-            Leaderboard
+            Classificação
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -83,7 +83,7 @@ const TestResultScreen = () => {
           style={{ backgroundColor: Colors.whiteColor, ...styles.buttonStyle }}
         >
           <Text numberOfLines={1} style={{ ...Fonts.secondaryColor17Bold }}>
-            Answer Sheet
+            Gabarito
           </Text>
         </TouchableOpacity>
       </View>
@@ -114,7 +114,7 @@ const TestResultScreen = () => {
         style={{ alignItems: "center", marginBottom: Sizes.fixPadding * 2.0 }}
       >
         <Text style={{ textAlign: "center", ...Fonts.blackColor15Medium }}>
-          You’re Excellent
+          Você está Excelente
         </Text>
         <Text
           style={{
@@ -141,7 +141,7 @@ const TestResultScreen = () => {
           95%
         </Text>
         <Text style={{ textAlign: "center", ...Fonts.whiteColor13SemiBold }}>
-          GRADE A
+          NOTA A
         </Text>
       </ImageBackground>
     );

@@ -9,6 +9,7 @@ import {
   TextInput,
   Modal,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import { Colors, Fonts, Sizes, CommonStyles } from "../../constants/styles";
@@ -21,6 +22,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import MyStatusBar from "../../components/myStatusBar";
 import { useNavigation } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";
+import { useSchool } from "../../hooks/useSchool";
 
 const monthsList = [
   "Jan",
@@ -40,11 +42,37 @@ const monthsList = [
 const StudentProfileScreen = () => {
 
   const navigation = useNavigation();
-  const { userData } = useAuth();
+  const { userData, refreshUserData } = useAuth();
+  const { schoolData, classData, teachers, schoolSubjects, loading, error, refreshSchoolData } = useSchool();
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Atualizar dados ao abrir a tela
+  useEffect(() => {
+    refreshAllData();
+  }, []);
+  
+  const refreshAllData = async () => {
+    setRefreshing(true);
+
+    
+    // Atualizar dados da escola
+    await refreshSchoolData();
+    
+    setRefreshing(false);
+  };
   
   useEffect(() => {
-    console.log("Dados do usuário no perfil:", userData);
-  }, [userData]);
+
+
+
+
+
+  }, [userData, schoolData, classData, teachers, schoolSubjects]);
+
+  // Função para atualizar os dados da escola manualmente
+  const handleRefreshSchoolData = () => {
+    refreshAllData();
+  };
 
   // Formatação de data de nascimento
   const formatBirthDate = (birthDateString) => {
@@ -99,6 +127,7 @@ const StudentProfileScreen = () => {
             showsVerticalScrollIndicator={false}
           >
             {profileInfo()}
+            {schoolInfo()}
             {adharNoAndAcademicYearInfo()}
             {admissionClassAndOldAdmissionNoInfo()}
             {dateOfAdmissionAndBirthInfo()}
@@ -378,6 +407,11 @@ const StudentProfileScreen = () => {
           <Text style={{ ...Fonts.grayColor16Regular }}>
             {studentGrade} | Turma {studentClass} | Nº: {studentRegistration}
           </Text>
+          {refreshing && (
+            <Text style={{ ...Fonts.primaryColor13Medium, marginTop: Sizes.fixPadding - 5.0 }}>
+              Atualizando dados...
+            </Text>
+          )}
         </View>
         <TouchableOpacity
           activeOpacity={0.8}
@@ -412,6 +446,134 @@ const StudentProfileScreen = () => {
         >
           Meu Perfil
         </Text>
+      </View>
+    );
+  }
+
+  function schoolInfo() {
+    if (loading || refreshing) {
+      return (
+        <View style={styles.rowItemStyle}>
+          <ActivityIndicator size="small" color={Colors.primaryColor} />
+          <Text style={{ textAlign: 'center', ...Fonts.grayColor14Medium }}>
+            {refreshing ? "Atualizando informações..." : "Carregando informações da escola..."}
+          </Text>
+        </View>
+      );
+    }
+
+    if (error) {
+      return (
+        <View style={styles.rowItemStyle}>
+          <Text style={{ textAlign: 'center', ...Fonts.redColor14Medium }}>
+            {error}
+          </Text>
+        </View>
+      );
+    }
+
+    if (!schoolData) {
+      return (
+        <View style={styles.rowItemStyle}>
+          <Text style={{ textAlign: 'center', ...Fonts.grayColor14Medium }}>
+            Informações da escola não disponíveis
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={{ marginHorizontal: Sizes.fixPadding * 2.0 }}>
+        <Text style={{ ...Fonts.blackColor16SemiBold }}>
+          Informações da Escola
+        </Text>
+        
+        {/* Informações básicas da escola */}
+        <View style={styles.schoolInfoBox}>
+          <Text style={{ ...Fonts.blackColor15Medium }}>
+            {schoolData.name || "N/A"}
+          </Text>
+          <Text style={{ ...Fonts.grayColor13Regular, marginTop: Sizes.fixPadding - 5.0 }}>
+            {schoolData.address || "Endereço não disponível"}
+          </Text>
+          <Text style={{ ...Fonts.grayColor13Regular }}>
+            {schoolData.phone || "Telefone não disponível"}
+          </Text>
+        </View>
+        
+        {/* Informações da turma */}
+        <View style={styles.rowContainerStyle}>
+          <View style={{ flex: 1 }}>
+            <Text
+              style={{ marginBottom: Sizes.fixPadding - 5.0, ...Fonts.grayColor14Medium }}
+            >
+              Turma
+            </Text>
+            <Text numberOfLines={1} style={{ ...Fonts.blackColor15Medium }}>
+              {classData?.name || studentClass || "N/A"}
+            </Text>
+          </View>
+          <View style={{ flex: 1, alignItems: "flex-end" }}>
+            <Text
+              style={{ marginBottom: Sizes.fixPadding - 5.0, ...Fonts.grayColor14Medium }}
+            >
+              Ano Letivo
+            </Text>
+            <Text numberOfLines={1} style={{ ...Fonts.blackColor15Medium }}>
+              {academicYear}
+            </Text>
+          </View>
+        </View>
+        
+        {/* Professores */}
+        {classData && (
+          <>
+            <View style={styles.dividerStyle} />
+            <Text style={{ marginTop: Sizes.fixPadding, ...Fonts.blackColor16SemiBold }}>
+              Professores
+            </Text>
+            <View style={{ marginTop: Sizes.fixPadding - 5.0 }}>
+              {teachers && teachers.length > 0 ? (
+                teachers.map((teacher, index) => (
+                  <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginTop: Sizes.fixPadding - 2.0 }}>
+                    <MaterialIcons name="person" size={16} color={Colors.grayColor} />
+                    <Text style={{ marginLeft: Sizes.fixPadding - 5.0, ...Fonts.blackColor14Medium }}>
+                      {teacher.personalInfo?.name || "Professor"} 
+                      {teacher.subjects && teacher.subjects.length > 0 
+                        ? ` - ${teacher.subjects.join(', ')}` 
+                        : ''}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={{ ...Fonts.grayColor13Regular }}>
+                  Informações dos professores não disponíveis
+                </Text>
+              )}
+            </View>
+          </>
+        )}
+        
+        {/* Disciplinas */}
+        {schoolSubjects && schoolSubjects.length > 0 && (
+          <>
+            <View style={styles.dividerStyle} />
+            <Text style={{ marginTop: Sizes.fixPadding, ...Fonts.blackColor16SemiBold }}>
+              Disciplinas
+            </Text>
+            <View style={{ marginTop: Sizes.fixPadding - 5.0, flexDirection: 'row', flexWrap: 'wrap' }}>
+              {schoolSubjects.map((subject, index) => (
+                <View key={index} style={styles.subjectTag}>
+                  <Text style={{ ...Fonts.whiteColor13Medium }}>
+                    {subject.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+        
+        <View style={{ ...styles.dividerStyle, marginTop: Sizes.fixPadding }} />
       </View>
     );
   }
@@ -471,5 +633,34 @@ const styles = StyleSheet.create({
     borderTopRightRadius: Sizes.fixPadding + 5.0,
     paddingHorizontal: Sizes.fixPadding * 2.0,
     paddingVertical: Sizes.fixPadding + 5.0,
+  },
+  rowItemStyle: {
+    padding: Sizes.fixPadding,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  rowContainerStyle: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dividerStyle: {
+    height: 1.0,
+    backgroundColor: Colors.lightGrayColor,
+    marginVertical: Sizes.fixPadding - 5.0,
+  },
+  schoolInfoBox: {
+    marginVertical: Sizes.fixPadding,
+    padding: Sizes.fixPadding,
+    backgroundColor: Colors.whiteColor,
+    borderRadius: Sizes.fixPadding,
+    borderColor: Colors.lightGrayColor,
+    borderWidth: 1.0,
+  },
+  subjectTag: {
+    backgroundColor: Colors.primaryColor,
+    paddingHorizontal: Sizes.fixPadding,
+    paddingVertical: Sizes.fixPadding - 5.0,
+    borderRadius: Sizes.fixPadding,
+    margin: Sizes.fixPadding * 0.5,
   },
 });
