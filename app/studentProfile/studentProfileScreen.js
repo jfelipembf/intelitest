@@ -22,7 +22,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import MyStatusBar from "../../components/myStatusBar";
 import { useNavigation } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";
-import { useSchool } from "../../hooks/useSchool";
+import { studentData as mockStudentData } from "../../constants/mockData";
 
 const monthsList = [
   "Jan",
@@ -43,42 +43,23 @@ const StudentProfileScreen = () => {
 
   const navigation = useNavigation();
   const { userData, refreshUserData } = useAuth();
-  const { schoolData, classData, teachers, schoolSubjects, loading, error, refreshSchoolData } = useSchool();
   const [refreshing, setRefreshing] = useState(false);
   
-  // Atualizar dados ao abrir a tela
   useEffect(() => {
     refreshAllData();
   }, []);
   
   const refreshAllData = async () => {
     setRefreshing(true);
-
-    
-    // Atualizar dados da escola
-    await refreshSchoolData();
-    
     setRefreshing(false);
   };
   
   useEffect(() => {
+  }, [userData]);
 
-
-
-
-
-  }, [userData, schoolData, classData, teachers, schoolSubjects]);
-
-  // Função para atualizar os dados da escola manualmente
-  const handleRefreshSchoolData = () => {
-    refreshAllData();
-  };
-
-  // Formatação de data de nascimento
   const formatBirthDate = (birthDateString) => {
     if (!birthDateString) return "";
     
-    // Verificar se já está no formato yyyy-mm-dd
     if (birthDateString.includes('-')) {
       const [year, month, day] = birthDateString.split('-');
       return `${day} ${monthsList[parseInt(month)-1]} ${year}`;
@@ -87,29 +68,26 @@ const StudentProfileScreen = () => {
     return birthDateString;
   };
 
-  // Dados do estudante
   const [showBottomSheet, setShowBottomSheet] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarFor, setCalendarFor] = useState("");
 
-  // Dados pessoais
-  const studentName = userData?.personalInfo?.name || "Estudante";
-  const studentClass = userData?.academicInfo?.class || "";
-  const studentGrade = userData?.academicInfo?.grade || "";
+  const studentName = userData?.personalInfo?.name || mockStudentData?.name || "Estudante";
+  const studentClass = userData?.academicInfo?.class || mockStudentData?.class || "A";
+  const studentGrade = userData?.academicInfo?.grade || mockStudentData?.grade || "9º Ano";
   const studentCPF = userData?.personalInfo?.cpf || "";
-  const studentRegistration = userData?.academicInfo?.registration || "";
-  const studentBirthDate = formatBirthDate(userData?.personalInfo?.birthDate) || "";
-  const studentEmail = userData?.personalInfo?.email || "";
-  const studentPhone = userData?.personalInfo?.phone || "";
+  const studentRegistration = userData?.academicInfo?.registration || mockStudentData?.rollNumber || "";
+  const studentBirthDate = formatBirthDate(userData?.personalInfo?.birthDate || mockStudentData?.birthDate) || "";
+  const studentEmail = userData?.personalInfo?.email || mockStudentData?.contactInfo?.email || "";
+  const studentPhone = userData?.personalInfo?.phone || mockStudentData?.contactInfo?.phone || "";
   const academicYear = "2023-2024";
   
-  // Dados do responsável
-  const guardianName = userData?.guardian?.name || "";
-  const guardianEmail = userData?.guardian?.email || "";
+  const guardianName = userData?.guardian?.name || mockStudentData?.parentInfo?.name || "";
+  const guardianEmail = userData?.guardian?.email || mockStudentData?.parentInfo?.email || "";
   
-  // Dados de endereço
   const fullAddress = userData?.address?.street && userData?.address?.city ? 
-    `${userData?.address?.street}, ${userData?.address?.number} - ${userData?.address?.neighborhood}, ${userData?.address?.city}/${userData?.address?.state}` : "";
+    `${userData?.address?.street}, ${userData?.address?.number} - ${userData?.address?.neighborhood}, ${userData?.address?.city}/${userData?.address?.state}` : 
+    mockStudentData?.contactInfo?.address || "";
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.primaryColor }}>
@@ -127,7 +105,6 @@ const StudentProfileScreen = () => {
             showsVerticalScrollIndicator={false}
           >
             {profileInfo()}
-            {schoolInfo()}
             {adharNoAndAcademicYearInfo()}
             {admissionClassAndOldAdmissionNoInfo()}
             {dateOfAdmissionAndBirthInfo()}
@@ -294,7 +271,7 @@ const StudentProfileScreen = () => {
   }
 
   function calendar() {
-    return null; // Removendo o calendário pois não será possível editar
+    return null;
   }
 
   function dateOfAdmissionAndBirthInfo() {
@@ -374,10 +351,10 @@ const StudentProfileScreen = () => {
         </View>
         <View style={{ flex: 1, marginHorizontal: Sizes.fixPadding }}>
           <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-            Ano Acadêmico
+            E-mail
           </Text>
           <Text style={styles.readOnlyFieldStyle}>
-            {academicYear || "-"}
+            {studentEmail || "-"}
           </Text>
         </View>
       </View>
@@ -446,134 +423,6 @@ const StudentProfileScreen = () => {
         >
           Meu Perfil
         </Text>
-      </View>
-    );
-  }
-
-  function schoolInfo() {
-    if (loading || refreshing) {
-      return (
-        <View style={styles.rowItemStyle}>
-          <ActivityIndicator size="small" color={Colors.primaryColor} />
-          <Text style={{ textAlign: 'center', ...Fonts.grayColor14Medium }}>
-            {refreshing ? "Atualizando informações..." : "Carregando informações da escola..."}
-          </Text>
-        </View>
-      );
-    }
-
-    if (error) {
-      return (
-        <View style={styles.rowItemStyle}>
-          <Text style={{ textAlign: 'center', ...Fonts.redColor14Medium }}>
-            {error}
-          </Text>
-        </View>
-      );
-    }
-
-    if (!schoolData) {
-      return (
-        <View style={styles.rowItemStyle}>
-          <Text style={{ textAlign: 'center', ...Fonts.grayColor14Medium }}>
-            Informações da escola não disponíveis
-          </Text>
-        </View>
-      );
-    }
-
-    return (
-      <View style={{ marginHorizontal: Sizes.fixPadding * 2.0 }}>
-        <Text style={{ ...Fonts.blackColor16SemiBold }}>
-          Informações da Escola
-        </Text>
-        
-        {/* Informações básicas da escola */}
-        <View style={styles.schoolInfoBox}>
-          <Text style={{ ...Fonts.blackColor15Medium }}>
-            {schoolData.name || "N/A"}
-          </Text>
-          <Text style={{ ...Fonts.grayColor13Regular, marginTop: Sizes.fixPadding - 5.0 }}>
-            {schoolData.address || "Endereço não disponível"}
-          </Text>
-          <Text style={{ ...Fonts.grayColor13Regular }}>
-            {schoolData.phone || "Telefone não disponível"}
-          </Text>
-        </View>
-        
-        {/* Informações da turma */}
-        <View style={styles.rowContainerStyle}>
-          <View style={{ flex: 1 }}>
-            <Text
-              style={{ marginBottom: Sizes.fixPadding - 5.0, ...Fonts.grayColor14Medium }}
-            >
-              Turma
-            </Text>
-            <Text numberOfLines={1} style={{ ...Fonts.blackColor15Medium }}>
-              {classData?.name || studentClass || "N/A"}
-            </Text>
-          </View>
-          <View style={{ flex: 1, alignItems: "flex-end" }}>
-            <Text
-              style={{ marginBottom: Sizes.fixPadding - 5.0, ...Fonts.grayColor14Medium }}
-            >
-              Ano Letivo
-            </Text>
-            <Text numberOfLines={1} style={{ ...Fonts.blackColor15Medium }}>
-              {academicYear}
-            </Text>
-          </View>
-        </View>
-        
-        {/* Professores */}
-        {classData && (
-          <>
-            <View style={styles.dividerStyle} />
-            <Text style={{ marginTop: Sizes.fixPadding, ...Fonts.blackColor16SemiBold }}>
-              Professores
-            </Text>
-            <View style={{ marginTop: Sizes.fixPadding - 5.0 }}>
-              {teachers && teachers.length > 0 ? (
-                teachers.map((teacher, index) => (
-                  <View key={index} style={{ flexDirection: 'row', alignItems: 'center', marginTop: Sizes.fixPadding - 2.0 }}>
-                    <MaterialIcons name="person" size={16} color={Colors.grayColor} />
-                    <Text style={{ marginLeft: Sizes.fixPadding - 5.0, ...Fonts.blackColor14Medium }}>
-                      {teacher.personalInfo?.name || "Professor"} 
-                      {teacher.subjects && teacher.subjects.length > 0 
-                        ? ` - ${teacher.subjects.join(', ')}` 
-                        : ''}
-                    </Text>
-                  </View>
-                ))
-              ) : (
-                <Text style={{ ...Fonts.grayColor13Regular }}>
-                  Informações dos professores não disponíveis
-                </Text>
-              )}
-            </View>
-          </>
-        )}
-        
-        {/* Disciplinas */}
-        {schoolSubjects && schoolSubjects.length > 0 && (
-          <>
-            <View style={styles.dividerStyle} />
-            <Text style={{ marginTop: Sizes.fixPadding, ...Fonts.blackColor16SemiBold }}>
-              Disciplinas
-            </Text>
-            <View style={{ marginTop: Sizes.fixPadding - 5.0, flexDirection: 'row', flexWrap: 'wrap' }}>
-              {schoolSubjects.map((subject, index) => (
-                <View key={index} style={styles.subjectTag}>
-                  <Text style={{ ...Fonts.whiteColor13Medium }}>
-                    {subject.name}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-        
-        <View style={{ ...styles.dividerStyle, marginTop: Sizes.fixPadding }} />
       </View>
     );
   }
@@ -648,19 +497,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.lightGrayColor,
     marginVertical: Sizes.fixPadding - 5.0,
   },
-  schoolInfoBox: {
-    marginVertical: Sizes.fixPadding,
-    padding: Sizes.fixPadding,
-    backgroundColor: Colors.whiteColor,
-    borderRadius: Sizes.fixPadding,
-    borderColor: Colors.lightGrayColor,
-    borderWidth: 1.0,
-  },
-  subjectTag: {
-    backgroundColor: Colors.primaryColor,
-    paddingHorizontal: Sizes.fixPadding,
-    paddingVertical: Sizes.fixPadding - 5.0,
-    borderRadius: Sizes.fixPadding,
-    margin: Sizes.fixPadding * 0.5,
-  },
+  schoolInfoBox: undefined,
+  subjectTag: undefined,
 });

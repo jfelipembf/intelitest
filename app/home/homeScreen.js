@@ -155,30 +155,12 @@ const HomeScreen = () => {
     return (
       <View style={styles.optionsWrapStyle}>
         {optionSort({
-          bgColor: Colors.lightPurpleColor,
-          icon: require("../../assets/images/icons/syllabus.png"),
-          title: "Programa",
-          description: "O que aprender",
-          onPress: () => {
-            navigation.push("syllabus/syllabusScreen");
-          },
-        })}
-        {optionSort({
           bgColor: Colors.lightCreamColor,
           icon: require("../../assets/images/icons/assignment.png"),
           title: "Atividades",
           description: "Tarefas a fazer",
           onPress: () => {
             navigation.push("assignment/assignmentScreen");
-          },
-        })}
-        {optionSort({
-          bgColor: Colors.lightGreenColor,
-          icon: require("../../assets/images/icons/calendar.png"),
-          title: "Calendário",
-          description: "Agenda mensal",
-          onPress: () => {
-            navigation.push("calender/calenderScreen");
           },
         })}
         {optionSort({
@@ -206,15 +188,6 @@ const HomeScreen = () => {
           description: "Notas e desempenho",
           onPress: () => {
             navigation.push("progressCard/progressCardScreen");
-          },
-        })}
-        {optionSort({
-          bgColor: Colors.lightGreenColor,
-          icon: require("../../assets/images/icons/leaveApplication.png"),
-          title: "Pedido de Ausência",
-          description: "Solicitar folga",
-          onPress: () => {
-            navigation.push("leaveApplication/leaveApplicationScreen");
           },
         })}
         {optionSort({
@@ -251,15 +224,6 @@ const HomeScreen = () => {
           description: "Todas conversas",
           onPress: () => {
             navigation.push("messages/messagesScreen");
-          },
-        })}
-        {optionSort({
-          bgColor: Colors.lightCyanColor,
-          icon: require("../../assets/images/icons/support.png"),
-          title: "Suporte",
-          description: "Saiba mais sobre nós",
-          onPress: () => {
-            navigation.push("support/supportScreen");
           },
         })}
         {optionSort({
