@@ -5,56 +5,56 @@ import { MaterialIcons } from '@expo/vector-icons';
 import MyStatusBar from '../../components/myStatusBar';
 import { useNavigation } from 'expo-router';
 
-const subjectsList = ['All', 'Maths', 'Sci', 'Eng', 'Eco', 'AC', 'Com'];
+const subjectsList = ['Todos', 'Mat', 'Ciên', 'Port', 'Eco', 'Cont', 'Info'];
 
 const facultiesList = [
     {
         id: '1',
         facultyName: 'Leslie Alexander',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Maths', 'Sci', 'Eco'],
+        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
+        subjectsKnown: ['Mat', 'Ciên', 'Eco'],
         facultyImage: require('../../assets/images/faculties/faculty1.png')
     },
     {
         id: '2',
         facultyName: 'Brooklyn Simmons',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['AC', 'Maths', 'Sci'],
+        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
+        subjectsKnown: ['Cont', 'Mat', 'Ciên'],
         facultyImage: require('../../assets/images/faculties/faculty2.png')
     },
     {
         id: '3',
         facultyName: 'Jacob Jones',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Eng', 'Com'],
+        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
+        subjectsKnown: ['Port', 'Info'],
         facultyImage: require('../../assets/images/faculties/faculty3.png')
     },
     {
         id: '4',
         facultyName: 'Wade Warren',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Eco', 'Sci', 'Eng'],
+        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
+        subjectsKnown: ['Eco', 'Ciên', 'Port'],
         facultyImage: require('../../assets/images/faculties/faculty4.png')
     },
     {
         id: '5',
         facultyName: 'Marvin McKinney',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Maths', 'AC'],
+        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
+        subjectsKnown: ['Mat', 'Cont'],
         facultyImage: require('../../assets/images/faculties/faculty5.png')
     },
     {
         id: '6',
         facultyName: 'Bessie Cooper',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Sci', 'Eng'],
+        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
+        subjectsKnown: ['Ciên', 'Port'],
         facultyImage: require('../../assets/images/faculties/faculty6.png')
     },
     {
         id: '7',
         facultyName: 'Devon Lane',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Maths', 'Eco'],
+        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
+        subjectsKnown: ['Mat', 'Eco'],
         facultyImage: require('../../assets/images/faculties/faculty7.png')
     },
 ];
@@ -92,27 +92,28 @@ const FacultiesScreen = () => {
                         <Text numberOfLines={1} style={{ ...Fonts.blackColor15Medium }}>
                             {item.facultyName}
                         </Text>
-                        <Text numberOfLines={3} style={{ marginTop: Sizes.fixPadding - 6.0, ...Fonts.grayColor13Regular }}>
+                        <Text
+                            numberOfLines={2}
+                            style={{
+                                marginTop: Sizes.fixPadding - 5.0,
+                                ...Fonts.grayColor13Regular,
+                            }}
+                        >
                             {item.description}
                         </Text>
                     </View>
-                    <View style={{ marginLeft: Sizes.fixPadding - 5.0, }}>
+                    <View style={{ marginLeft: Sizes.fixPadding }}>
                         <Image
                             source={item.facultyImage}
-                            style={{ width: 60.0, height: 60.0, borderRadius: 30.0, }}
+                            style={{ width: 60.0, height: 60.0, borderRadius: 30.0 }}
                         />
                         <TouchableOpacity
                             activeOpacity={0.8}
                             onPress={() => { navigation.push('chatWithFaculty/chatWithFacultyScreen') }}
                             style={styles.chatBoxStyle}
                         >
-                            <MaterialIcons
-                                name='message'
-                                color={Colors.whiteColor}
-                                size={10}
-                            />
-                            <Text style={{ marginLeft: Sizes.fixPadding - 8.0, ...Fonts.whiteColor10Bold }}>
-                                Chat
+                            <Text style={{ ...Fonts.whiteColor11Bold, color: Colors.whiteColor }}>
+                                Conversar
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -168,7 +169,7 @@ const FacultiesScreen = () => {
             <View style={styles.headerWrapStyle}>
                 <MaterialIcons name="arrow-back" size={24} color={Colors.whiteColor} onPress={() => { navigation.pop() }} />
                 <Text style={{ marginLeft: Sizes.fixPadding * 2.0, ...Fonts.whiteColor18SemiBold }}>
-                    Faculties
+                    Professores
                 </Text>
             </View>
         )
@@ -218,6 +219,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         backgroundColor: Colors.secondaryColor,
         alignItems: 'center',
+        justifyContent: 'center',
         borderRadius: Sizes.fixPadding,
         paddingHorizontal: Sizes.fixPadding,
         paddingVertical: Sizes.fixPadding - 7.0,

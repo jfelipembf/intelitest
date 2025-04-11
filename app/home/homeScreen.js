@@ -218,15 +218,6 @@ const HomeScreen = () => {
           },
         })}
         {optionSort({
-          bgColor: Colors.lightGreenColor,
-          icon: require("../../assets/images/icons/message.png"),
-          title: "Mensagens",
-          description: "Todas conversas",
-          onPress: () => {
-            navigation.push("messages/messagesScreen");
-          },
-        })}
-        {optionSort({
           bgColor: Colors.lightPurpleColor,
           icon: require("../../assets/images/icons/lock.png"),
           title: "Mudar Senha",

@@ -28,12 +28,12 @@ const teachersList = [
 ];
 
 const subjectsList = [
-  "Mathematics",
-  "English",
-  "Economics",
-  "Accounting",
-  "Science",
-  "Computer",
+  "Matemática",
+  "Português",
+  "Economia",
+  "Contabilidade",
+  "Ciências",
+  "Informática",
 ];
 
 const AskDoubtsScreen = () => {
@@ -75,15 +75,15 @@ const AskDoubtsScreen = () => {
 
   function subjectInfo() {
     return (
-      <View style={{ marginHorizontal: Sizes.fixPadding * 2.0 }}>
+      <View style={{ marginHorizontal: Sizes.fixPadding * 2.0, marginBottom: Sizes.fixPadding * 2.0 }}>
         <Text
           numberOfLines={1}
           style={{
-            marginBottom: Sizes.fixPadding - 7.0,
+            marginBottom: Sizes.fixPadding,
             ...Fonts.grayColor13Regular,
           }}
         >
-          Select Subject
+          Selecione a Disciplina
         </Text>
         <Menu
           visible={showSubjectsMenu}
@@ -107,7 +107,7 @@ const AskDoubtsScreen = () => {
                     : { ...Fonts.grayColor14Regular }),
                 }}
               >
-                {selectedSubject ? selectedSubject : "Select Subject"}
+                {selectedSubject ? selectedSubject : "Selecione a Disciplina"}
               </Text>
               <Feather
                 name="chevron-down"
@@ -157,15 +157,15 @@ const AskDoubtsScreen = () => {
 
   function teacherInfo() {
     return (
-      <View style={{ margin: Sizes.fixPadding * 2.0 }}>
+      <View style={{ marginHorizontal: Sizes.fixPadding * 2.0, marginBottom: Sizes.fixPadding * 2.0, marginTop: Sizes.fixPadding }}>
         <Text
           numberOfLines={1}
           style={{
-            marginBottom: Sizes.fixPadding - 7.0,
+            marginBottom: Sizes.fixPadding,
             ...Fonts.grayColor13Regular,
           }}
         >
-          Select Teacher
+          Selecione o Professor
         </Text>
         <Menu
           visible={showTeachersMenu}
@@ -189,7 +189,7 @@ const AskDoubtsScreen = () => {
                     : { ...Fonts.grayColor14Regular }),
                 }}
               >
-                {selectedTeacher ? selectedTeacher : "Select Teacher"}
+                {selectedTeacher ? selectedTeacher : "Selecione o Professor"}
               </Text>
               <Feather
                 name="chevron-down"
@@ -246,19 +246,25 @@ const AskDoubtsScreen = () => {
         }}
         style={styles.buttonStyle}
       >
-        <Text style={{ ...Fonts.whiteColor17Bold }}>Send</Text>
+        <Text style={{ ...Fonts.whiteColor17Bold }}>Enviar</Text>
       </TouchableOpacity>
     );
   }
 
   function descriptionInfo() {
     return (
-      <View style={{ marginHorizontal: Sizes.fixPadding * 2.0 }}>
-        <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-          Description
+      <View style={{ marginHorizontal: Sizes.fixPadding * 2.0, marginBottom: Sizes.fixPadding * 2.0 }}>
+        <Text 
+          numberOfLines={1} 
+          style={{ 
+            ...Fonts.grayColor13Regular,
+            marginBottom: Sizes.fixPadding,
+          }}
+        >
+          Descrição
         </Text>
         <TextInput
-          placeholder="Ex. What is the senario..."
+          placeholder="Ex. Qual é o cenário..."
           placeholderTextColor={Colors.grayColor}
           value={description}
           onChangeText={(value) => {
@@ -266,7 +272,9 @@ const AskDoubtsScreen = () => {
           }}
           cursorColor={Colors.primaryColor}
           selectionColor={Colors.primaryColor}
-          style={styles.textFieldStyle}
+          multiline={true}
+          numberOfLines={3}
+          style={[styles.textFieldStyle, { minHeight: 80, textAlignVertical: 'top' }]}
         />
       </View>
     );
@@ -274,12 +282,18 @@ const AskDoubtsScreen = () => {
 
   function titleInfo() {
     return (
-      <View style={{ margin: Sizes.fixPadding * 2.0 }}>
-        <Text numberOfLines={1} style={{ ...Fonts.grayColor13Regular }}>
-          Title
+      <View style={{ marginHorizontal: Sizes.fixPadding * 2.0, marginBottom: Sizes.fixPadding * 2.0 }}>
+        <Text 
+          numberOfLines={1} 
+          style={{ 
+            ...Fonts.grayColor13Regular,
+            marginBottom: Sizes.fixPadding,
+          }}
+        >
+          Título
         </Text>
         <TextInput
-          placeholder="Ex. Statistics for Economics"
+          placeholder="Ex. Estatística para Economia"
           placeholderTextColor={Colors.grayColor}
           value={title}
           onChangeText={(value) => {
@@ -310,7 +324,7 @@ const AskDoubtsScreen = () => {
             ...Fonts.whiteColor18SemiBold,
           }}
         >
-          Ask Doubts
+          Tirar Dúvidas
         </Text>
       </View>
     );
@@ -334,13 +348,15 @@ const styles = StyleSheet.create({
     marginBottom: -(Sizes.fixPadding * 5.0),
     overflow: "hidden",
     paddingBottom: Sizes.fixPadding * 5.0,
+    paddingTop: Sizes.fixPadding * 2.0,
   },
   textFieldStyle: {
     ...Fonts.blackColor14Medium,
     borderBottomColor: Colors.lightGrayColor,
     borderBottomWidth: 1.0,
-    paddingHorizontal:0,
-    paddingVertical: Sizes.fixPadding - 5.0 ,
+    paddingHorizontal: 0,
+    paddingVertical: Sizes.fixPadding,
+    marginBottom: Sizes.fixPadding,
   },
   buttonStyle: {
     backgroundColor: Colors.secondaryColor,
