@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import React, { useState, useCallback, useEffect } from "react";
 import { Colors, Fonts, Sizes, CommonStyles } from "../../constants/styles";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import MyStatusBar from "../../components/myStatusBar";
 import { useNavigation } from "expo-router";
@@ -71,6 +71,13 @@ const HomeScreen = () => {
         resizeMode="stretch"
         tintColor={Colors.whiteColor}
       >
+        <View style={styles.schoolLogoContainer}>
+          <Image
+            source={require("../../assets/images/inteli_icon.png")}
+            style={styles.schoolLogoStyle}
+            resizeMode="contain"
+          />
+        </View>
         {header()}
         <View style={styles.sheetStyle} />
         <View style={{ flex: 1 }}>
@@ -155,6 +162,19 @@ const HomeScreen = () => {
     return (
       <View style={styles.optionsWrapStyle}>
         {optionSort({
+          bgColor: Colors.lightPurpleColor,
+          customIcon: (
+            <View style={styles.customIconContainer}>
+              <FontAwesome5 name="bullhorn" size={30} color="#54527a" />
+            </View>
+          ),
+          title: "Avisos",
+          description: "Comunicados",
+          onPress: () => {
+            navigation.push("announcements/announcementsScreen");
+          },
+        })}
+        {optionSort({
           bgColor: Colors.lightCreamColor,
           icon: require("../../assets/images/icons/assignment.png"),
           title: "Atividades",
@@ -170,15 +190,6 @@ const HomeScreen = () => {
           description: "Agenda diária",
           onPress: () => {
             navigation.push("timeTable/timeTableScreen");
-          },
-        })}
-        {optionSort({
-          bgColor: Colors.lightPurpleColor,
-          icon: require("../../assets/images/icons/test.png"),
-          title: "Provas",
-          description: "Avaliações",
-          onPress: () => {
-            navigation.push("test/testScreen");
           },
         })}
         {optionSort({
@@ -239,17 +250,21 @@ const HomeScreen = () => {
     );
   }
 
-  function optionSort({ bgColor, icon, title, description, onPress }) {
+  function optionSort({ bgColor, icon, customIcon, title, description, onPress }) {
     return (
       <TouchableOpacity
         activeOpacity={0.8}
         onPress={onPress}
         style={{ backgroundColor: bgColor, ...styles.singleOptionWrapStyle }}
       >
-        <Image
-          source={icon}
-          style={{ width: 30.0, height: 30.0, resizeMode: "contain" }}
-        />
+        {customIcon ? (
+          customIcon
+        ) : (
+          <Image
+            source={icon}
+            style={{ width: 30.0, height: 30.0, resizeMode: "contain" }}
+          />
+        )}
         <Text
           numberOfLines={1}
           style={{
@@ -394,11 +409,21 @@ export default HomeScreen;
 
 const styles = StyleSheet.create({
   headerWrapStyle: {
-    marginVertical: Sizes.fixPadding * 3.0,
     marginHorizontal: Sizes.fixPadding * 2.0,
+    marginBottom: Sizes.fixPadding * 3.0,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  schoolLogoContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: Sizes.fixPadding * 2.0,
+    marginBottom: Sizes.fixPadding,
+  },
+  schoolLogoStyle: {
+    width: 120,
+    height: 50,
   },
   userImageStyle: {
     width: 50.0,
@@ -415,12 +440,13 @@ const styles = StyleSheet.create({
     left: 0.0,
     right: 0.0,
     height: "100%",
-    top: width / 1.8,
+    top: width / 1.5,
   },
   attendanceAndFeeInfoWrapStyle: {
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: Sizes.fixPadding + 5.0,
+    marginTop: Sizes.fixPadding * 3.0,
   },
   attendanceAndFeesDetailWrapStyle: {
     flex: 1,
@@ -482,5 +508,11 @@ const styles = StyleSheet.create({
     padding: Sizes.fixPadding * 2.0,
     width: "90%",
     borderRadius: Sizes.fixPadding - 5.0,
-  }
+  },
+  customIconContainer: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 });

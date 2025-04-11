@@ -208,25 +208,35 @@ const AssignmentScreen = () => {
             >
                 {header()}
                 <View style={styles.sheetStyle}>
-                    <View style={styles.tabsContainer}>
-                        <Text 
-                            style={[
-                                styles.tabText, 
-                                !showCompleted && styles.activeTabText
-                            ]}
-                            onPress={() => setShowCompleted(false)}
+                    <View style={styles.allFiltersWrapStyle}>
+                        <TouchableOpacity
+                          activeOpacity={0.8}
+                          onPress={() => setShowCompleted(false)}
+                          style={{
+                            backgroundColor: !showCompleted ? Colors.secondaryColor : 'transparent',
+                            flex: 1,
+                            alignItems: 'center',
+                            ...styles.filterButtonStyle,
+                          }}
                         >
+                          <Text style={!showCompleted ? { ...Fonts.whiteColor13Medium } : { ...Fonts.blackColor13Medium }}>
                             Pendentes
-                        </Text>
-                        <Text 
-                            style={[
-                                styles.tabText, 
-                                showCompleted && styles.activeTabText
-                            ]}
-                            onPress={() => setShowCompleted(true)}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          activeOpacity={0.8}
+                          onPress={() => setShowCompleted(true)}
+                          style={{
+                            backgroundColor: showCompleted ? Colors.secondaryColor : 'transparent',
+                            flex: 1,
+                            alignItems: 'center',
+                            ...styles.filterButtonStyle,
+                          }}
                         >
+                          <Text style={showCompleted ? { ...Fonts.whiteColor13Medium } : { ...Fonts.blackColor13Medium }}>
                             Concluídas
-                        </Text>
+                          </Text>
+                        </TouchableOpacity>
                     </View>
                     {loading ? (
                         <View style={styles.loaderContainer}>
@@ -293,23 +303,21 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingTop: Sizes.fixPadding * 10,
     },
-    tabsContainer: {
+    allFiltersWrapStyle: {
+        borderColor: Colors.secondaryColor,
+        borderWidth: 1.0,
+        borderRadius: Sizes.fixPadding * 2.0,
+        margin: Sizes.fixPadding * 2.0,
+        marginLeft: Sizes.fixPadding,
         flexDirection: 'row',
-        marginHorizontal: Sizes.fixPadding * 2.0,
-        marginTop: Sizes.fixPadding * 2.0,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.lightGrayColor,
+        overflow: 'hidden',
+        width: 200,
+        alignSelf: 'flex-start',
     },
-    tabText: {
-        ...Fonts.grayColor14Medium,
+    filterButtonStyle: {
+        paddingVertical: Sizes.fixPadding - 5.0,
         paddingHorizontal: Sizes.fixPadding,
-        paddingBottom: Sizes.fixPadding,
-        marginRight: Sizes.fixPadding * 2.0,
-    },
-    activeTabText: {
-        ...Fonts.primaryColor14SemiBold,
-        borderBottomWidth: 2,
-        borderBottomColor: Colors.primaryColor,
+        borderRadius: Sizes.fixPadding * 2.0,
     },
     headerRow: {
         flexDirection: 'row',
