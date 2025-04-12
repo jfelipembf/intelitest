@@ -71,13 +71,7 @@ const HomeScreen = () => {
         resizeMode="stretch"
         tintColor={Colors.whiteColor}
       >
-        <View style={styles.schoolLogoContainer}>
-          <Image
-            source={require("../../assets/images/inteli_icon.png")}
-            style={styles.schoolLogoStyle}
-            resizeMode="contain"
-          />
-        </View>
+        <View style={{ marginTop: Sizes.fixPadding * 4.0 }} />
         {header()}
         <View style={styles.sheetStyle} />
         <View style={{ flex: 1 }}>
@@ -165,7 +159,7 @@ const HomeScreen = () => {
           bgColor: Colors.lightPurpleColor,
           customIcon: (
             <View style={styles.customIconContainer}>
-              <FontAwesome5 name="bullhorn" size={30} color="#54527a" />
+              <MaterialIcons name="campaign" size={40} color={Colors.purpleColor}/>
             </View>
           ),
           title: "Avisos",
@@ -226,15 +220,6 @@ const HomeScreen = () => {
           description: "Lista de docentes",
           onPress: () => {
             navigation.push("faculties/facultiesScreen");
-          },
-        })}
-        {optionSort({
-          bgColor: Colors.lightPurpleColor,
-          icon: require("../../assets/images/icons/lock.png"),
-          title: "Mudar Senha",
-          description: "Alterar sua senha",
-          onPress: () => {
-            navigation.push("changePassword/changePasswordScreen");
           },
         })}
         {optionSort({
@@ -410,20 +395,11 @@ export default HomeScreen;
 const styles = StyleSheet.create({
   headerWrapStyle: {
     marginHorizontal: Sizes.fixPadding * 2.0,
-    marginBottom: Sizes.fixPadding * 3.0,
+    marginBottom: Sizes.fixPadding * 2.0,
+    marginTop: Sizes.fixPadding,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-  },
-  schoolLogoContainer: {
-    width: '100%',
-    alignItems: 'center',
-    marginTop: Sizes.fixPadding * 2.0,
-    marginBottom: Sizes.fixPadding,
-  },
-  schoolLogoStyle: {
-    width: 120,
-    height: 50,
   },
   userImageStyle: {
     width: 50.0,
@@ -440,13 +416,13 @@ const styles = StyleSheet.create({
     left: 0.0,
     right: 0.0,
     height: "100%",
-    top: width / 1.5,
+    top: width / 1.7,
   },
   attendanceAndFeeInfoWrapStyle: {
     flexDirection: "row",
     alignItems: "center",
     marginHorizontal: Sizes.fixPadding + 5.0,
-    marginTop: Sizes.fixPadding * 3.0,
+    marginTop: Sizes.fixPadding * 2.0,
   },
   attendanceAndFeesDetailWrapStyle: {
     flex: 1,
@@ -510,8 +486,8 @@ const styles = StyleSheet.create({
     borderRadius: Sizes.fixPadding - 5.0,
   },
   customIconContainer: {
-    width: 30,
-    height: 30,
+    width: 35,
+    height: 35,
     justifyContent: 'center',
     alignItems: 'center',
   },

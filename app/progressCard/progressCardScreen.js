@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, Dimensions, ScrollView, ImageBackground, Animated } from 'react-native'
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions, ScrollView, ImageBackground, Animated, FlatList } from 'react-native'
 import React, { useState, useRef } from 'react'
 import { Colors, Fonts, Sizes } from '../../constants/styles'
 import { MaterialIcons } from '@expo/vector-icons';
@@ -51,8 +51,26 @@ const ProgressCardScreen = () => {
     const navigation = useNavigation();
     
     const [expandedSubjectId, setExpandedSubjectId] = useState(null);
+    const [selectedPeriod, setSelectedPeriod] = useState('1º Unidade');
     const animatedHeights = useRef(subjectsList.map(() => new Animated.Value(0))).current;
     const scrollViewRef = useRef(null);
+    
+    // Lista de períodos disponíveis
+    const periods = ['1º Unidade', '2º Unidade', '3º Unidade', '4º Unidade'];
+
+    // Função para obter o índice da unidade com base no período selecionado
+    const getUnitIndexFromPeriod = (period) => {
+        switch(period) {
+            case '1º Unidade': return 0;
+            case '2º Unidade': return 1;
+            case '3º Unidade': return 2;
+            case '4º Unidade': return 3;
+            default: return 0;
+        }
+    };
+
+    // Obter o índice da unidade atual com base no período selecionado
+    const currentUnitIndex = getUnitIndexFromPeriod(selectedPeriod);
 
     // Função para expandir/contrair uma disciplina
     const toggleExpand = (index, subjectId) => {
@@ -103,32 +121,64 @@ const ProgressCardScreen = () => {
             >
                 {header()}
                 <View style={styles.sheetStyle}>
-                    <ScrollView 
-                        ref={scrollViewRef}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: Sizes.fixPadding * 2.0 }}
-                    >
-                        {studentNameAndPracticeText()}
-                        {subjectsListInfo()}
-                    </ScrollView>
+                    {studentNameAndPracticeText()}
+                    {periodSelector()}
+                    {subjectsListInfo()}
                 </View>
             </ImageBackground>
         </View>
     )
 
+    // Seletor de períodos (Unidades)
+    function periodSelector() {
+        return (
+            <View style={styles.allPeriodsWrapStyle}>
+                <FlatList
+                    data={periods}
+                    keyExtractor={(item) => item}
+                    renderItem={({ item, index }) => (
+                        <TouchableOpacity
+                            activeOpacity={0.8}
+                            onPress={() => setSelectedPeriod(item)}
+                            style={{
+                                backgroundColor: item === selectedPeriod ? Colors.secondaryColor : 'transparent',
+                                marginHorizontal: index === 0 || index === periods.length - 1 ? 0.0 : Sizes.fixPadding - 5.0,
+                                paddingHorizontal: item === selectedPeriod ? Sizes.fixPadding + 10.0 : Sizes.fixPadding + 2.0,
+                                ...styles.periodWrapStyle,
+                            }}
+                        >
+                            <Text style={item === selectedPeriod ? { ...Fonts.whiteColor13Medium } : { ...Fonts.blackColor13Medium }}>
+                                {item}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                />
+            </View>
+        )
+    }
+
     function subjectsListInfo() {
         return (
-            <View style={{ marginBottom: Sizes.fixPadding * 2.0 }}>
-                <Text style={{ marginBottom: Sizes.fixPadding * 2.0, marginHorizontal: Sizes.fixPadding * 2.0, ...Fonts.blackColor16Medium }}>
-                    Disciplinas e Notas
+            <View style={{ marginTop: Sizes.fixPadding }}>
+                <Text style={styles.periodTitle}>
+                    Notas do {selectedPeriod}
                 </Text>
-                {
-                    subjectsList.map((item, index) => {
-                        // Calcula a média aritmética simples de todas as notas da disciplina
+                <View style={styles.periodSummaryContainer}>
+                    <Text style={{ ...Fonts.grayColor13Regular }}>
+                        Total de disciplinas: <Text style={{ ...Fonts.primaryColor13Medium }}>{subjectsList.length}</Text>
+                    </Text>
+                </View>
+                
+                <FlatList
+                    data={subjectsList}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item, index }) => {
+                        // Calcular a média final da disciplina
                         let totalGrades = 0;
                         let gradesSum = 0;
                         
-                        // Percorre todas as unidades da disciplina
                         item.units.forEach(unit => {
                             unit.grades.forEach(grade => {
                                 gradesSum += grade.value;
@@ -136,135 +186,149 @@ const ProgressCardScreen = () => {
                             });
                         });
                         
-                        const average = (gradesSum / totalGrades).toFixed(1);
+                        const subjectAverage = totalGrades > 0 ? (gradesSum / totalGrades).toFixed(1) : "0.0";
+                        
+                        // Determinar a cor com base na média
+                        let indicatorColor = Colors.primaryColor;
+                        if (subjectAverage >= 8.0) {
+                            indicatorColor = Colors.greenColor;
+                        } else if (subjectAverage >= 6.0) {
+                            indicatorColor = Colors.secondaryColor;
+                        } else if (subjectAverage < 6.0) {
+                            indicatorColor = Colors.redColor;
+                        }
+                        
                         const isExpanded = expandedSubjectId === item.id;
                         
                         return (
                             <View key={`${item.id}`} style={styles.subjectContainer}>
                                 <TouchableOpacity
-                                    style={[
-                                        styles.subjectItemStyle, 
-                                        isExpanded && styles.subjectItemExpanded,
-                                        { borderColor: parseFloat(average) < 6 ? Colors.redColor : Colors.greenColor }
-                                    ]}
+                                    activeOpacity={0.9}
                                     onPress={() => toggleExpand(index, item.id)}
-                                    activeOpacity={0.8}
+                                    style={styles.infoWrapStyle}
                                 >
-                                    <View style={styles.subjectOuterWrapStyle}>
-                                        <View style={[styles.indicatorStyle, { backgroundColor: parseFloat(average) < 6 ? Colors.redColor : Colors.greenColor }]} />
-                                        <View style={styles.infoWrapStyle}>
-                                            <Text
-                                                numberOfLines={1}
-                                                style={{ flex: 1, ...Fonts.blackColor16Regular }}
-                                            >
+                                    <View>
+                                        <View style={styles.subjectTitleContainer}>
+                                            <Text style={{ ...Fonts.blackColor16SemiBold, flex: 1 }}>
                                                 {item.subject}
                                             </Text>
-                                        </View>
-                                        <View style={styles.averageContainer}>
-                                            <View style={{ backgroundColor: parseFloat(average) < 6 ? Colors.lightRedColor : Colors.lightGreenColor, ...styles.countWrapStyle }}>
-                                                <Text style={{ ...(parseFloat(average) < 6 ? Fonts.redColor15SemiBold : Fonts.greenColor15SemiBold) }}>
-                                                    {average}
+                                            <View style={[
+                                                styles.averageTag, 
+                                                { 
+                                                    borderColor: parseFloat(subjectAverage) >= 6 ? 
+                                                        '#3498db' : Colors.redColor,
+                                                    backgroundColor: parseFloat(subjectAverage) >= 6 ? 
+                                                        '#3498db15' : Colors.redColor + '15'
+                                                }
+                                            ]}>
+                                                <Text style={{ 
+                                                    color: parseFloat(subjectAverage) >= 6 ? '#3498db' : Colors.redColor,
+                                                    fontSize: 15,
+                                                    fontFamily: 'Inter-SemiBold'
+                                                }}>
+                                                    {subjectAverage}
                                                 </Text>
                                             </View>
-                                            <MaterialIcons 
-                                                name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-                                                size={24} 
-                                                color={Colors.grayColor} 
-                                                style={{ marginRight: Sizes.fixPadding }}
-                                            />
                                         </View>
-                                    </View>
-                                </TouchableOpacity>
-                                
-                                <Animated.View 
-                                    style={[
-                                        styles.expandableContent,
-                                        {
-                                            maxHeight: animatedHeights[index].interpolate({
-                                                inputRange: [0, 1],
-                                                outputRange: [0, 1500] // Valor alto para garantir que tudo seja exibido
-                                            }),
-                                            opacity: animatedHeights[index],
-                                            borderLeftWidth: 1,
-                                            borderRightWidth: 1,
-                                            borderBottomWidth: 1,
-                                            borderColor: parseFloat(average) < 6 ? Colors.redColor : Colors.greenColor,
-                                            borderBottomLeftRadius: Sizes.fixPadding,
-                                            borderBottomRightRadius: Sizes.fixPadding,
-                                            paddingHorizontal: 0,
-                                            position: 'relative'
-                                        }
-                                    ]}
-                                >
-                                    <View style={[styles.expandedIndicator, { backgroundColor: parseFloat(average) < 6 ? Colors.redColor : Colors.greenColor }]} />
-                                    {/* Exibir notas por unidade */}
-                                    {item.units.map((unit, unitIndex) => {
-                                        // Calcula a média da unidade
-                                        const unitGradesSum = unit.grades.reduce((sum, grade) => sum + grade.value, 0);
-                                        const unitAverage = (unitGradesSum / unit.grades.length).toFixed(1);
+                                        <View style={styles.teacherInfoContainer}>
+                                            <MaterialIcons name="person" size={16} color={Colors.secondaryColor} />
+                                            <Text style={{ marginLeft: 4, ...Fonts.grayColor14Regular }}>
+                                                {item.teacher || "Professor não informado"}
+                                            </Text>
+                                        </View>
                                         
-                                        return (
-                                            <View key={unitIndex} style={styles.unitContainer}>
-                                                <Text style={styles.unitTitle}>{unit.name}</Text>
-                                                
-                                                {/* Cabeçalho da tabela de notas */}
-                                                <View style={styles.gradeHeaderRow}>
-                                                    <Text style={[styles.gradeHeaderText, { flex: 1 }]}>Avaliação</Text>
-                                                    <Text style={[styles.gradeHeaderText, { flex: 1, textAlign: 'center' }]}>Nota</Text>
-                                                </View>
-                                                
-                                                {/* Linhas de notas */}
-                                                {unit.grades.map((grade, gradeIndex) => (
-                                                    <View key={gradeIndex} style={styles.gradeRow}>
-                                                        <Text style={[styles.gradeText, { flex: 1 }]}>{grade.title}</Text>
-                                                        <Text style={[styles.gradeValueText, { flex: 1, textAlign: 'center' }]}>{grade.value.toFixed(1)}</Text>
-                                                    </View>
-                                                ))}
-                                                
-                                                {/* Média da unidade */}
-                                                <View style={styles.unitAverageContainer}>
-                                                    <Text style={styles.unitAverageLabel}>Média da Unidade:</Text>
-                                                    <Text style={styles.unitAverageValue}>{unitAverage}</Text>
+                                        {/* Remover exibição da nota no card fechado */}
+                                        {/*
+                                        {!isExpanded && (
+                                            <View style={styles.gradesPreviewContainer}>
+                                                <View style={styles.unitAveragePreview}>
+                                                    <Text style={{ ...Fonts.primaryColor16Bold }}>
+                                                        {item.units.length > currentUnitIndex ? 
+                                                            calculateUnitAverage(item.units[currentUnitIndex]) : 
+                                                            "0.0"}
+                                                    </Text>
                                                 </View>
                                             </View>
-                                        );
-                                    })}
-                                    
-                                    {/* Média final da disciplina */}
-                                    <View style={[styles.finalAverageContainer, { marginLeft: 32 }]}>
-                                        <Text style={styles.finalAverageLabel}>Média Final:</Text>
-                                        <Text style={styles.finalAverageValue}>{average}</Text>
+                                        )}
+                                        */}
+                                        
+                                        {isExpanded && (
+                                            <View>
+                                                {item.units.length > currentUnitIndex && (
+                                                    <View style={styles.unitContainer}>
+                                                        <Text style={styles.unitTitle}>
+                                                            {selectedPeriod}
+                                                        </Text>
+                                                        
+                                                        {item.units[currentUnitIndex].grades.map((grade, gradeIndex) => (
+                                                            <View key={`grade-${gradeIndex}`} style={styles.gradeRow}>
+                                                                <Text style={{ ...Fonts.blackColor14Regular, flex: 1 }}>
+                                                                    {grade.title}
+                                                                </Text>
+                                                                <View style={[
+                                                                    styles.gradeValueContainer,
+                                                                    {
+                                                                        borderColor: parseFloat(grade.value) >= 6 ? 
+                                                                            '#3498db' : Colors.redColor,
+                                                                        backgroundColor: parseFloat(grade.value) >= 6 ? 
+                                                                            '#3498db15' : Colors.redColor + '15'
+                                                                    }
+                                                                ]}>
+                                                                    <Text style={{ 
+                                                                        color: parseFloat(grade.value) >= 6 ? '#3498db' : Colors.redColor,
+                                                                        fontSize: 14,
+                                                                        fontFamily: 'Inter-Medium'
+                                                                    }}>
+                                                                        {grade.value.toFixed(1)}
+                                                                    </Text>
+                                                                </View>
+                                                            </View>
+                                                        ))}
+                                                        
+                                                        <View style={styles.unitAverageContainer}>
+                                                            <Text style={{ ...Fonts.blackColor14Medium }}>
+                                                                Média do {selectedPeriod}:
+                                                            </Text>
+                                                            <Text style={{ 
+                                                                color: parseFloat(calculateUnitAverage(item.units[currentUnitIndex])) >= 6 ? 
+                                                                    '#3498db' : Colors.redColor,
+                                                                fontSize: 16,
+                                                                fontFamily: 'Inter-Bold'
+                                                            }}>
+                                                                {calculateUnitAverage(item.units[currentUnitIndex])}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        )}
                                     </View>
-
-                                </Animated.View>
+                                    <MaterialIcons
+                                        name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                                        size={24}
+                                        color={Colors.grayColor}
+                                        style={{ alignSelf: 'center', marginTop: isExpanded ? 10 : 0 }}
+                                    />
+                                </TouchableOpacity>
                             </View>
-                        )
-                    })
-                }
+                        );
+                    }}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: Sizes.fixPadding * 20.0 }}
+                />
             </View>
-        )
+        );
     }
 
     function studentNameAndPracticeText() {
-        const overallAverage = calculateOverallAverage();
-        const isLowAverage = parseFloat(overallAverage) < 6;
-        
         return (
             <View style={styles.studentInfoContainer}>
                 <Text style={styles.studentName}>
                     {studentData.name}
                 </Text>
                 <Text style={styles.semesterInfo}>
-                    Boletim Escolar - {schoolData.currentSemester}
+                    {studentData.grade} - {schoolData.currentSemester}
                 </Text>
-                <View style={styles.overallAverageContainer}>
-                    <Text style={styles.overallAverageLabel}>Média Geral:</Text>
-                    <View style={[styles.overallAverageValueContainer, { backgroundColor: isLowAverage ? Colors.lightRedColor : Colors.lightGreenColor }]}>
-                        <Text style={[styles.overallAverageValue, isLowAverage ? Fonts.redColor16Bold : Fonts.greenColor16Bold]}>
-                            {overallAverage}
-                        </Text>
-                    </View>
-                </View>
             </View>
         )
     }
@@ -297,21 +361,11 @@ const styles = StyleSheet.create({
         flex: 1,
         marginBottom: -(Sizes.fixPadding * 5.0),
         overflow: "hidden",
-        paddingBottom: Sizes.fixPadding * 5.0,
+        paddingBottom: Sizes.fixPadding * 15.0,
     },
     studentInfoContainer: {
         alignItems: 'center',
-        margin: Sizes.fixPadding * 2.0,
-        backgroundColor: Colors.whiteColor,
-        borderRadius: Sizes.fixPadding,
-        padding: Sizes.fixPadding * 1.5,
-        borderWidth: 1,
-        borderColor: Colors.lightGrayColor,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 2,
+        marginVertical: Sizes.fixPadding * 2.0,
     },
     studentName: {
         textAlign: 'center',
@@ -322,111 +376,70 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         ...Fonts.blackColor15Regular
     },
-    overallAverageContainer: {
+    allPeriodsWrapStyle: {
+        borderColor: Colors.secondaryColor,
+        borderWidth: 1.0,
+        borderRadius: Sizes.fixPadding * 2.0,
+        margin: Sizes.fixPadding * 2.0,
+        overflow: 'hidden'
+    },
+    periodWrapStyle: {
+        borderRadius: Sizes.fixPadding * 2.0,
+        paddingVertical: Sizes.fixPadding - 5.0,
+    },
+    periodTitle: {
+        ...Fonts.blackColor15Medium,
+        marginBottom: Sizes.fixPadding,
+        marginHorizontal: Sizes.fixPadding * 2.0,
+    },
+    periodSummaryContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        marginTop: Sizes.fixPadding,
-    },
-    overallAverageLabel: {
-        ...Fonts.blackColor16Medium,
-        marginRight: Sizes.fixPadding,
-    },
-    overallAverageValueContainer: {
-        width: 40.0,
-        height: 40.0,
-        borderRadius: 20.0,
-        backgroundColor: Colors.lightGreenColor,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    overallAverageValue: {
-        ...Fonts.greenColor16Bold,
+        justifyContent: 'space-between',
+        padding: Sizes.fixPadding,
+        marginHorizontal: Sizes.fixPadding,
+        marginBottom: Sizes.fixPadding,
     },
     subjectContainer: {
         marginHorizontal: Sizes.fixPadding * 2.0,
-        marginBottom: Sizes.fixPadding / 2,
-    },
-    subjectItemStyle: {
-        paddingVertical: 0,
-        paddingHorizontal: 0,
-        borderRadius: Sizes.fixPadding,
-        backgroundColor: Colors.whiteColor,
-        borderWidth: 1,
-        borderColor: Colors.lightGrayColor,
-        overflow: 'hidden',
-    },
-    subjectItemExpanded: {
-        borderBottomLeftRadius: 0,
-        borderBottomRightRadius: 0,
-        borderBottomWidth: 0,
-        borderColor: Colors.lightGrayColor,
-        backgroundColor: Colors.whiteColor,
-    },
-    subjectTitleContainer: {
-        flex: 1,
-        padding: Sizes.fixPadding,
-    },
-    subjectTitle: {
-        ...Fonts.blackColor16Medium,
-    },
-    indicatorStyle: {
-        width: 32.0,
-        borderTopLeftRadius: Sizes.fixPadding,
-        borderBottomLeftRadius: 0,
-        height: "100%",
-        left: -1.0,
-    },
-    subjectOuterWrapStyle: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        flex: 1,
+        marginBottom: Sizes.fixPadding * 2.0,
     },
     infoWrapStyle: {
-        flexDirection: "row",
-        flex: 1,
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: Sizes.fixPadding,
-        paddingVertical: Sizes.fixPadding + 5,
+        borderColor: Colors.lightGrayColor,
+        borderWidth: 1.0,
+        borderRadius: Sizes.fixPadding,
+        paddingVertical: Sizes.fixPadding * 2.0,
+        paddingHorizontal: Sizes.fixPadding + 5.0,
+        backgroundColor: Colors.whiteColor,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
     },
-    averageContainer: {
+    subjectTitleContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginBottom: Sizes.fixPadding,
     },
-    averageText: {
-        ...Fonts.blackColor16Medium,
-        marginRight: Sizes.fixPadding,
+    averageTag: {
+        backgroundColor: Colors.primaryColor + '15',
+        borderRadius: Sizes.fixPadding,
+        paddingHorizontal: Sizes.fixPadding * 0.8,
+        paddingVertical: Sizes.fixPadding * 0.3,
+        marginLeft: Sizes.fixPadding,
+        borderWidth: 1,
     },
-    countWrapStyle: {
-        width: 32.0,
-        height: 32.0,
-        borderRadius: 16.0,
-        alignItems: "center",
-        justifyContent: "center",
-        marginRight: Sizes.fixPadding,
-    },
-    expandableContent: {
-        overflow: 'hidden',
-        paddingHorizontal: 0,
-        backgroundColor: Colors.whiteColor,
-    },
-    expandedIndicator: {
-        width: 32.0,
-        position: 'absolute',
-        left: -1.0,
-        top: 0,
-        bottom: 0,
-        zIndex: 0,
+    teacherInfoContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: Sizes.fixPadding,
     },
     unitContainer: {
-        marginBottom: Sizes.fixPadding,
+        marginTop: Sizes.fixPadding,
+        padding: Sizes.fixPadding,
         backgroundColor: Colors.whiteColor,
         borderRadius: Sizes.fixPadding,
-        padding: Sizes.fixPadding,
-        marginTop: Sizes.fixPadding / 2,
-        marginLeft: 32,
-        marginRight: Sizes.fixPadding,
         borderWidth: 1,
         borderColor: Colors.lightGrayColor,
     },
@@ -435,26 +448,20 @@ const styles = StyleSheet.create({
         marginBottom: Sizes.fixPadding,
         color: Colors.primaryColor,
     },
-    gradeHeaderRow: {
-        flexDirection: 'row',
-        paddingBottom: Sizes.fixPadding / 2,
-        borderBottomWidth: 1,
-        borderBottomColor: Colors.lightGrayColor,
-    },
-    gradeHeaderText: {
-        ...Fonts.blackColor14Medium,
-    },
     gradeRow: {
         flexDirection: 'row',
+        alignItems: 'center',
         paddingVertical: Sizes.fixPadding / 2,
         borderBottomWidth: 1,
         borderBottomColor: Colors.lightGrayColor,
     },
-    gradeText: {
-        ...Fonts.blackColor14Regular,
-    },
-    gradeValueText: {
-        ...Fonts.blackColor14Medium,
+    gradeValueContainer: {
+        backgroundColor: Colors.primaryColor + '15',
+        borderRadius: Sizes.fixPadding,
+        paddingHorizontal: Sizes.fixPadding * 0.8,
+        paddingVertical: Sizes.fixPadding * 0.3,
+        borderColor: Colors.primaryColor,
+        borderWidth: 1,
     },
     unitAverageContainer: {
         flexDirection: 'row',
@@ -463,28 +470,30 @@ const styles = StyleSheet.create({
         marginTop: Sizes.fixPadding,
         paddingTop: Sizes.fixPadding / 2,
     },
-    unitAverageLabel: {
-        ...Fonts.blackColor14Medium,
-    },
-    unitAverageValue: {
-        ...Fonts.primaryColor16Bold,
-    },
-    finalAverageContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
+    gradesPreviewContainer: {
         marginTop: Sizes.fixPadding,
-        marginBottom: Sizes.fixPadding / 2,
-        paddingVertical: Sizes.fixPadding,
+        borderTopWidth: 1,
+        borderTopColor: Colors.lightGrayColor,
+        paddingTop: Sizes.fixPadding,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+    },
+    unitAveragePreview: {
+        backgroundColor: Colors.primaryColor + '15',
         paddingHorizontal: Sizes.fixPadding,
-        borderTopWidth: 2,
-        borderTopColor: Colors.primaryColor,
-        backgroundColor: Colors.whiteColor,
+        paddingVertical: Sizes.fixPadding / 2,
+        borderRadius: Sizes.fixPadding - 5,
+        marginLeft: Sizes.fixPadding,
+        borderColor: Colors.primaryColor,
+        borderWidth: 1,
     },
-    finalAverageLabel: {
-        ...Fonts.blackColor16Medium,
-    },
-    finalAverageValue: {
-        ...Fonts.primaryColor18Bold,
-    }
 })
+
+// Função para calcular a média de uma unidade
+const calculateUnitAverage = (unit) => {
+    if (!unit || !unit.grades || unit.grades.length === 0) return "0.0";
+    
+    const unitGrades = unit.grades.map(g => g.value);
+    return (unitGrades.reduce((a, b) => a + b, 0) / unitGrades.length).toFixed(1);
+};
