@@ -5,12 +5,14 @@ import { MaterialIcons } from '@expo/vector-icons';
 import MyStatusBar from '../../components/myStatusBar';
 import { useNavigation } from 'expo-router';
 import { useSchool } from '../../hooks/useSchool';
+import { useLessons } from '../../hooks/useLessons';
 import { WEEK_DAYS_SHORT, DEFAULT_LESSON_VALUES } from '../../constants/dateTime';
 
 const TimeTableScreen = () => {
 
     const navigation = useNavigation();
-    const { lessons, loading, schoolData, classData } = useSchool();
+    const { schoolData, classData } = useSchool();
+    const { lessons, loading } = useLessons();
     const [selectedDayIndex, setSelectedDayIndex] = useState(0);
     const [timeTables, setTimeTables] = useState([]);
     const [selectedDayLessons, setSelectedDayLessons] = useState([]);

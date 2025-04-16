@@ -1,247 +1,164 @@
-import { useState, useEffect, useContext, createContext } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useContext,
+  createContext,
+  useMemo,
+  useCallback
+} from 'react';
+import PropTypes from 'prop-types';
 import { db } from '../firebase/config';
-import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where
+} from 'firebase/firestore';
 import { useAuth } from './useAuth';
 
-// Criar contexto para as informações da escola
-const SchoolContext = createContext({});
+const SchoolContext = createContext(null);
 
-// Provider para o contexto de escola
 export const SchoolProvider = ({ children }) => {
   const { user, userData } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+
   const [schoolData, setSchoolData] = useState(null);
   const [classData, setClassData] = useState(null);
-  const [teachers, setTeachers] = useState([]);
   const [schoolSubjects, setSchoolSubjects] = useState([]);
-  const [lessons, setLessons] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Função auxiliar para tratamento de erros
-  const handleError = (message, error) => {
-    console.error(message, error);
-    setError(`${message}: ${error.message}`);
-    setLoading(false);
+  const handleError = (message, err) => {
+    console.error(message, err);
+    setError(`${message}: ${err.message}`);
   };
 
-  // Função auxiliar para criar dados básicos da classe quando não disponíveis completamente
-  const createBasicClassData = (classId) => {
-    return {
-      id: classId,
-      name: userData?.academicInfo?.class || "Turma não identificada",
-      grade: userData?.academicInfo?.grade || "Série não identificada"
-    };
-  };
+  const createBasicClassData = (classId) => ({
+    id: classId || 'unknown',
+    name: userData?.academicInfo?.class || 'Turma não especificada',
+    teacherIds: []
+  });
 
-  // Função para buscar dados da escola
   const fetchSchoolData = async (schoolId) => {
-    try {
-      const schoolDocRef = doc(db, 'schools', schoolId);
-      const schoolDoc = await getDoc(schoolDocRef);
-
-      if (!schoolDoc.exists()) {
-        setError("Escola não encontrada");
-        setLoading(false);
-        return null;
-      }
-
-      return {
-        id: schoolDoc.id,
-        ...schoolDoc.data()
-      };
-    } catch (error) {
-      handleError("Erro ao buscar escola", error);
-      return null;
-    }
+    const snap = await getDoc(doc(db, 'schools', schoolId));
+    if (!snap.exists()) throw new Error('Escola não encontrada');
+    return { id: snap.id, ...snap.data() };
   };
 
-  // Função para buscar dados da classe
   const fetchClassData = async (schoolId, classId) => {
-    try {
-      const classDocRef = doc(db, 'schools', schoolId, 'classes', classId);
-      const classDoc = await getDoc(classDocRef);
-
-      if (!classDoc.exists()) {
-        return createBasicClassData(classId);
-      }
-
-      return {
-        id: classDoc.id,
-        ...classDoc.data()
-      };
-    } catch (error) {
-      handleError("Erro ao buscar dados da classe", error);
-      return createBasicClassData(classId);
-    }
+    const snap = await getDoc(doc(db, 'schools', schoolId, 'classes', classId));
+    if (!snap.exists()) return createBasicClassData(classId);
+    return { id: snap.id, ...snap.data() };
   };
 
-  // Função para buscar disciplinas da turma
   const fetchSubjects = async (schoolId, classId) => {
-    try {
-      const subjectsCollectionRef = collection(db, 'schools', schoolId, 'classes', classId, 'subjects');
-      const subjectsSnapshot = await getDocs(subjectsCollectionRef);
-      return subjectsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    } catch (error) {
-      console.warn("Erro ao buscar disciplinas da turma:", error);
-      return [];
-    }
+    const col = collection(db, 'schools', schoolId, 'classes', classId, 'subjects');
+    const snap = await getDocs(col);
+    return snap.empty
+      ? []
+      : snap.docs.map(d => ({ id: d.id, ...d.data() }));
   };
 
-  // Função para buscar aulas da turma
-  const fetchLessons = async (schoolId, classId) => {
-    try {
-      const lessonsCollectionRef = collection(db, 'schools', schoolId, 'classes', classId, 'lessons');
-      const lessonsSnapshot = await getDocs(lessonsCollectionRef);
-      return lessonsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    } catch (error) {
-      console.warn("Erro ao buscar aulas da turma:", error);
-      return [];
-    }
-  };
-
-  // Função para buscar professores da turma
   const fetchTeachers = async (teacherIds) => {
-    try {
-      if (!teacherIds || teacherIds.length === 0) {
-        return [];
-      }
-      
-      const teachersPromises = teacherIds.map(teacherId => 
-        getDoc(doc(db, 'users', teacherId))
-      );
-      const teachersDocs = await Promise.all(teachersPromises);
-      return teachersDocs
-        .filter(doc => doc.exists())
-        .map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-    } catch (error) {
-      console.warn("Erro ao buscar professores da turma:", error);
-      return [];
-    }
+    if (!teacherIds?.length) return [];
+    const q = query(
+      collection(db, 'teachers'),
+      where('__name__', 'in', teacherIds)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
   };
 
-  // Função principal para buscar dados da escola e da turma
-  const fetchSchoolAndClassData = async () => {
-    if (!userData) {
+  const fetchSchoolAndClassData = useCallback(async () => {
+    if (!userData?.schoolId) {
+      setError('ID da escola não disponível');
       setLoading(false);
-      setError("Usuário não autenticado ou dados não disponíveis");
       return;
     }
-
     setLoading(true);
     setError(null);
 
     try {
-      // Extrair IDs da escola e da turma dos dados do usuário
       const schoolId = userData.schoolId;
       const classId = userData.academicInfo?.classId;
-      
-      if (!schoolId) {
-        setError("ID da escola não encontrado nos dados do usuário");
-        setLoading(false);
-        return;
+
+      const [schoolInfo, classInfo] = await Promise.all([
+        fetchSchoolData(schoolId),
+        classId ? fetchClassData(schoolId, classId) : Promise.resolve(null)
+      ]);
+
+      let subjectsData = [];
+      let teachersData = [];
+
+      if (classInfo) {
+        [subjectsData, teachersData] = await Promise.all([
+          fetchSubjects(schoolId, classInfo.id),
+          fetchTeachers(classInfo.teacherIds)
+        ]);
       }
 
-      // Buscar dados da escola
-      const schoolInfo = await fetchSchoolData(schoolId);
-      if (!schoolInfo) return;
       setSchoolData(schoolInfo);
-
-      // Se classId disponível, buscar dados da turma
-      if (classId) {
-        // Buscar dados da classe
-        const classInfo = await fetchClassData(schoolId, classId);
-        setClassData(classInfo);
-
-        // Buscar disciplinas da turma
-        const subjectsData = await fetchSubjects(schoolId, classId);
-        setSchoolSubjects(subjectsData);
-
-        // Buscar aulas da turma
-        const lessonsData = await fetchLessons(schoolId, classId);
-        setLessons(lessonsData);
-
-        // Buscar professores da turma
-        if (classInfo.teacherIds && classInfo.teacherIds.length > 0) {
-          const teachersData = await fetchTeachers(classInfo.teacherIds);
-          setTeachers(teachersData);
-        }
-      } else {
-        if (userData.academicInfo?.class) {
-          setClassData(createBasicClassData(null));
-        } else {
-          setClassData(null);
-        }
-      }
-
-      setLoading(false);
-    } catch (error) {
-      handleError("Erro ao buscar dados da escola e turma", error);
-    }
-  };
-
-  // Efeito para buscar dados quando o usuário muda
-  useEffect(() => {
-    if (userData) {
-      fetchSchoolAndClassData();
-    } else {
-      setSchoolData(null);
-      setClassData(null);
-      setTeachers([]);
-      setSchoolSubjects([]);
-      setLessons([]);
+      setClassData(classInfo);
+      setSchoolSubjects(subjectsData);
+      setTeachers(teachersData);
+    } catch (err) {
+      handleError('Erro ao buscar dados da escola/turma', err);
+    } finally {
       setLoading(false);
     }
   }, [userData]);
 
-  // Função para listar todas as classes disponíveis na escola
-  const listAvailableClasses = async () => {
-    if (!schoolData?.id) return [];
-    
-    try {
-      const classesCollectionRef = collection(db, 'schools', schoolData.id, 'classes');
-      const classesSnapshot = await getDocs(classesCollectionRef);
-      
-      return classesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-    } catch (error) {
-      console.error("Erro ao listar classes:", error);
-      return [];
+  useEffect(() => {
+    if (user && userData) {
+      fetchSchoolAndClassData();
+    } else {
+      setSchoolData(null);
+      setClassData(null);
+      setSchoolSubjects([]);
+      setTeachers([]);
+      setLoading(false);
+      setError(null);
     }
+  }, [user, userData, fetchSchoolAndClassData]);
+
+  const refreshSchoolData = () => {
+    fetchSchoolAndClassData();
   };
 
-  // Função para atualizar os dados da escola e turma manualmente
-  const refreshSchoolData = () => fetchSchoolAndClassData();
+  const contextValue = useMemo(() => ({
+    schoolData,
+    classData,
+    schoolSubjects,
+    teachers,
+    loading,
+    error,
+    refreshSchoolData
+  }), [
+    schoolData,
+    classData,
+    schoolSubjects,
+    teachers,
+    loading,
+    error
+  ]);
 
   return (
-    <SchoolContext.Provider
-      value={{
-        schoolData,
-        classData,
-        teachers,
-        schoolSubjects,
-        lessons,
-        loading,
-        error,
-        refreshSchoolData
-      }}
-    >
+    <SchoolContext.Provider value={contextValue}>
       {children}
     </SchoolContext.Provider>
   );
 };
 
-// Hook personalizado para usar o contexto de escola
+SchoolProvider.propTypes = {
+  children: PropTypes.node.isRequired
+};
+
 export const useSchool = () => {
-  return useContext(SchoolContext);
+  const ctx = useContext(SchoolContext);
+  if (!ctx) {
+    throw new Error('useSchool deve ser usado dentro de <SchoolProvider>');
+  }
+  return ctx;
 };

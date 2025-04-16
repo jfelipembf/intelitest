@@ -18,6 +18,8 @@ import MyStatusBar from "../../components/myStatusBar";
 import { useNavigation } from "expo-router";
 import { useAuth } from "../../hooks/useAuth";
 
+
+
 const { width } = Dimensions.get("window");
 
 const HomeScreen = () => {

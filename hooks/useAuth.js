@@ -10,13 +10,16 @@ import { doc, getDoc } from 'firebase/firestore';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Configurações e constantes
-const USER_AUTH_KEY = 'user_auth';
-const USER_DATA_KEY = 'user_data';
-const REMEMBER_ME_KEY = 'rememberMe';
-const LAST_LOGIN_TIME_KEY = 'lastLoginTime';
-const LOGIN_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 dias
-const REQUIRED_ROLE = 'aluno';
+// Importando constantes de autenticação
+import { 
+  USER_AUTH_KEY, 
+  USER_DATA_KEY, 
+  REMEMBER_ME_KEY, 
+  LAST_LOGIN_TIME_KEY, 
+  LOGIN_EXPIRATION_MS, 
+  REQUIRED_ROLE,
+  ERROR_MESSAGES 
+} from '../constants/auth';
 
 // Criar o contexto de autenticação
 const AuthContext = createContext({});
@@ -46,7 +49,7 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
     } catch (error) {
-      console.error("Erro ao buscar dados do usuário:", error);
+
       return null;
     }
   };
@@ -132,6 +135,7 @@ export const AuthProvider = ({ children }) => {
 
     // Salva a configuração de "lembrar-me"
     saveRememberMePreference: async (rememberMe) => {
+
       await AsyncStorage.setItem(REMEMBER_ME_KEY, rememberMe ? 'true' : 'false');
     },
 
@@ -147,23 +151,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Tradução de códigos de erro do Firebase
+  // Tradução de códigos de erro do Firebase
   const getErrorMessage = (errorCode) => {
-    switch (errorCode) {
-      case 'auth/invalid-email':
-        return "E-mail inválido.";
-      case 'auth/user-not-found':
-        return "Usuário não encontrado.";
-      case 'auth/wrong-password':
-        return "Senha incorreta.";
-      case 'auth/too-many-requests':
-        return "Muitas tentativas de login. Tente novamente mais tarde.";
-      case 'auth/user-disabled':
-        return "Conta desativada. Entre em contato com sua escola.";
-      case 'auth/network-request-failed':
-        return "Falha na conexão com a internet. Verifique sua rede e tente novamente.";
-      default:
-        return "Erro ao fazer login. Verifique suas credenciais.";
-    }
+    return ERROR_MESSAGES[errorCode] || ERROR_MESSAGES.default;
   };
 
   // Efeito para verificar o estado de autenticação ao iniciar o app

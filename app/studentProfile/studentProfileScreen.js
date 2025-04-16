@@ -46,6 +46,28 @@ const StudentProfileScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   
   useEffect(() => {
+    // Carregar dados salvos no AsyncStorage
+    const loadAsyncStorageData = async () => {
+      try {
+        const rememberMe = await AsyncStorage.getItem(REMEMBER_ME_KEY);
+        const lastLoginTime = await AsyncStorage.getItem(LAST_LOGIN_TIME_KEY);
+        
+        // Carregar dados do SecureStore
+        const storedUserJSON = await SecureStore.getItemAsync('user_auth');
+        const storedUserDataJSON = await SecureStore.getItemAsync('user_data');
+        
+        if (storedUserJSON && storedUserDataJSON) {
+          const storedUser = JSON.parse(storedUserJSON);
+          const storedUserData = JSON.parse(storedUserDataJSON);
+          
+          return { user: storedUser, userData: storedUserData };
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados salvos:', error);
+      }
+    };
+
+    loadAsyncStorageData();
     refreshAllData();
   }, []);
   
