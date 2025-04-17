@@ -8,131 +8,188 @@ import React, {
 } from 'react';
 import PropTypes from 'prop-types';
 import { db } from '../firebase/config';
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where
-} from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useAuth } from './useAuth';
+import { useFirestoreQuery } from './useFirestoreQuery';
+import { schoolService } from '../services/firebaseService';
+import logService from '../utils/logService';
 
 const SchoolContext = createContext(null);
 
 export const SchoolProvider = ({ children }) => {
   const { user, userData } = useAuth();
 
+  // Estados
   const [schoolData, setSchoolData] = useState(null);
   const [classData, setClassData] = useState(null);
-  const [schoolSubjects, setSchoolSubjects] = useState([]);
-  const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const handleError = (message, err) => {
-    console.error(message, err);
-    setError(`${message}: ${err.message}`);
-  };
+  // Log de depuração para entender o fluxo
+  useEffect(() => {
+    logService.debug('useSchool - Estado atual:', { 
+      'User Auth ID': user?.uid,
+      'User Data': userData ? 'Disponível' : 'Não disponível',
+      'SchoolID': userData?.schoolId,
+      'ClassID': userData?.academicInfo?.classId,
+      'School Data': schoolData ? 'Carregado' : 'Não carregado',
+      'Class Data': classData ? 'Carregado' : 'Não carregado' 
+    });
+  }, [user, userData, schoolData, classData]);
 
-  const createBasicClassData = (classId) => ({
-    id: classId || 'unknown',
-    name: userData?.academicInfo?.class || 'Turma não especificada',
-    teacherIds: []
-  });
-
-  const fetchSchoolData = async (schoolId) => {
-    const snap = await getDoc(doc(db, 'schools', schoolId));
-    if (!snap.exists()) throw new Error('Escola não encontrada');
-    return { id: snap.id, ...snap.data() };
-  };
-
-  const fetchClassData = async (schoolId, classId) => {
-    const snap = await getDoc(doc(db, 'schools', schoolId, 'classes', classId));
-    if (!snap.exists()) return createBasicClassData(classId);
-    return { id: snap.id, ...snap.data() };
-  };
-
-  const fetchSubjects = async (schoolId, classId) => {
-    const col = collection(db, 'schools', schoolId, 'classes', classId, 'subjects');
-    const snap = await getDocs(col);
-    return snap.empty
-      ? []
-      : snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  };
-
-  const fetchTeachers = async (teacherIds) => {
-    if (!teacherIds?.length) return [];
-    const q = query(
-      collection(db, 'teachers'),
-      where('__name__', 'in', teacherIds)
+  // Construir queries baseadas nos dados do usuário
+  const subjectsQuery = useMemo(() => {
+    if (!userData?.schoolId || !userData?.academicInfo?.classId) {
+      logService.warn('Queries de disciplinas não podem ser criadas: dados insuficientes', {
+        schoolId: userData?.schoolId,
+        classId: userData?.academicInfo?.classId
+      });
+      return null;
+    }
+    
+    logService.debug('Criando query de disciplinas', {
+      schoolId: userData.schoolId,
+      classId: userData.academicInfo.classId
+    });
+    
+    return collection(
+      db, 
+      'schools', 
+      userData.schoolId, 
+      'classes', 
+      userData.academicInfo.classId, 
+      'subjects'
     );
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  };
+  }, [userData?.schoolId, userData?.academicInfo?.classId]);
 
+  const teachersQuery = useMemo(() => {
+    if (!classData?.teacherIds?.length) {
+      logService.debug('Query de professores não criada: sem IDs de professores');
+      return null;
+    }
+    
+    logService.debug('Criando query de professores', {
+      teacherIds: classData.teacherIds.length
+    });
+    
+    return query(
+      collection(db, 'teachers'),
+      where('__name__', 'in', classData.teacherIds)
+    );
+  }, [classData?.teacherIds]);
+
+  // Usar useFirestoreQuery para obter dados com cache eficiente
+  const { 
+    data: schoolSubjects, 
+    loading: subjectsLoading 
+  } = useFirestoreQuery(subjectsQuery, [subjectsQuery]);
+  
+  const { 
+    data: teachers, 
+    loading: teachersLoading 
+  } = useFirestoreQuery(teachersQuery, [teachersQuery]);
+
+  // Função para tratamento de erros
+  const handleError = useCallback((message, err) => {
+    logService.error(message, err);
+    setError(`${message}: ${err.message}`);
+  }, []);
+
+  // Função principal para buscar dados da escola e turma
   const fetchSchoolAndClassData = useCallback(async () => {
+    // Verificar se temos os dados necessários
     if (!userData?.schoolId) {
       setError('ID da escola não disponível');
       setLoading(false);
       return;
     }
+
+    const schoolId = userData.schoolId;
+    const classId = userData.academicInfo?.classId;
+    const userName = userData?.academicInfo?.class;
+
+    // Iniciar loading
     setLoading(true);
     setError(null);
+    
+    logService.info('Iniciando busca de dados da escola/turma', { schoolId, classId });
 
     try {
-      const schoolId = userData.schoolId;
-      const classId = userData.academicInfo?.classId;
+      // Criar controller para gerenciar cancelamento
+      const controller = new AbortController();
+      const signal = controller.signal;
 
+      // Buscar informações da escola e turma em paralelo
       const [schoolInfo, classInfo] = await Promise.all([
-        fetchSchoolData(schoolId),
-        classId ? fetchClassData(schoolId, classId) : Promise.resolve(null)
+        schoolService.fetchSchoolData(schoolId),
+        classId ? schoolService.fetchClassData(schoolId, classId, userName) : Promise.resolve(null)
       ]);
 
-      let subjectsData = [];
-      let teachersData = [];
+      if (signal.aborted) return;
 
-      if (classInfo) {
-        [subjectsData, teachersData] = await Promise.all([
-          fetchSubjects(schoolId, classInfo.id),
-          fetchTeachers(classInfo.teacherIds)
-        ]);
-      }
-
+      // Atualizar estados
+      logService.debug('Dados recuperados com sucesso', { 
+        schoolName: schoolInfo?.name,
+        className: classInfo?.name 
+      });
+      
       setSchoolData(schoolInfo);
       setClassData(classInfo);
-      setSchoolSubjects(subjectsData);
-      setTeachers(teachersData);
     } catch (err) {
       handleError('Erro ao buscar dados da escola/turma', err);
     } finally {
       setLoading(false);
     }
-  }, [userData]);
+  }, [userData, handleError]);
 
+  // Efeito para carregar dados quando o usuário estiver autenticado
   useEffect(() => {
-    if (user && userData) {
-      fetchSchoolAndClassData();
-    } else {
-      setSchoolData(null);
-      setClassData(null);
-      setSchoolSubjects([]);
-      setTeachers([]);
-      setLoading(false);
-      setError(null);
-    }
+    // Abortar se o componente for desmontado
+    const controller = new AbortController();
+    const signal = controller.signal;
+
+    const loadData = async () => {
+      if (signal.aborted) return;
+      
+      if (user && userData) {
+        logService.info('Usuário autenticado, carregando dados', { 
+          uid: user.uid, 
+          role: userData.role 
+        });
+        await fetchSchoolAndClassData();
+      } else {
+        logService.info('Sem usuário autenticado, limpando dados');
+        setSchoolData(null);
+        setClassData(null);
+        setLoading(false);
+        setError(null);
+      }
+    };
+
+    loadData();
+
+    // Cleanup function
+    return () => {
+      controller.abort();
+    };
   }, [user, userData, fetchSchoolAndClassData]);
 
-  const refreshSchoolData = () => {
+  // Função para recarregar dados
+  const refreshSchoolData = useCallback(() => {
+    logService.info('Recarregando dados da escola');
     fetchSchoolAndClassData();
-  };
+  }, [fetchSchoolAndClassData]);
 
+  // Loading combinado para todos os dados
+  const isLoading = loading || subjectsLoading || teachersLoading;
+
+  // Memorizar o valor do contexto para evitar re-renderizações
   const contextValue = useMemo(() => ({
     schoolData,
     classData,
     schoolSubjects,
     teachers,
-    loading,
+    loading: isLoading,
     error,
     refreshSchoolData
   }), [
@@ -140,8 +197,9 @@ export const SchoolProvider = ({ children }) => {
     classData,
     schoolSubjects,
     teachers,
-    loading,
-    error
+    isLoading,
+    error,
+    refreshSchoolData
   ]);
 
   return (

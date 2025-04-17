@@ -6,168 +6,267 @@ import React, {
   useMemo,
   useCallback
 } from 'react';
-import { db } from '../firebase/config';
-import { collection, getDocs } from 'firebase/firestore';
+import PropTypes from 'prop-types';
 import { useAuth } from './useAuth';
 import { useSchool } from './useSchool';
 import { useLessons } from './useLessons';
+import { updateDoc, doc, getDocs, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase/config';
+import { activityService } from '../services/firebaseService';
+import logService from '../utils/logService';
 
+// Constantes para valores padrão e configurações
+const UPCOMING_DAYS_WINDOW = 3; // Dias para considerar "próximas atividades"
+
+// Contexto para atividades
 const ActivitiesContext = createContext(null);
 
 export const ActivitiesProvider = ({ children }) => {
-  const { userData } = useAuth();                           // conexão com autenticação :contentReference[oaicite:2]{index=2}&#8203;:contentReference[oaicite:3]{index=3}
-  const { schoolData, classData } = useSchool();            // dados de escola/turma :contentReference[oaicite:4]{index=4}&#8203;:contentReference[oaicite:5]{index=5}
-  const { lessons, loading: lessonsLoading } = useLessons(); // lista de aulas :contentReference[oaicite:6]{index=6}&#8203;:contentReference[oaicite:7]{index=7}
+  const { userData } = useAuth();
+  const { schoolData, classData } = useSchool();
+  const { lessons, loading: lessonsLoading } = useLessons();
 
-  const [activities, setActivities] = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState(null);
+  // Estados
+  const [allActivities, setAllActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // 1) Fetch de todas as atividades (um getDocs por lesson)
-  const fetchActivities = useCallback(async () => {
+  // Logging para depuração do estado atual
+  useEffect(() => {
+    logService.debug('useActivities - Estado atual:', {
+      'Tem userData': !!userData,
+      'Tem schoolData': !!schoolData?.id,
+      'Tem classData': !!classData?.id,
+      'Lessons carregadas': lessons.length,
+      'Lessons carregando': lessonsLoading,
+      'Total atividades': allActivities.length
+    });
+  }, [userData, schoolData, classData, lessons, lessonsLoading, allActivities]);
+
+  // Efeito para buscar atividades para cada aula
+  useEffect(() => {
+    // Verificar dados necessários
     if (
       !userData ||
       !schoolData?.id ||
       !classData?.id ||
-      lessonsLoading
+      lessonsLoading ||
+      !lessons.length
     ) {
-      // Nenhum dado ainda — limpa e sai
-      setActivities([]);
+      logService.debug('useActivities: Dados insuficientes para buscar atividades', {
+        'userData': !!userData,
+        'schoolId': schoolData?.id,
+        'classId': classData?.id,
+        'lessonsLoading': lessonsLoading,
+        'lessonsCount': lessons.length
+      });
+      setAllActivities([]);
       setLoading(false);
       return;
     }
 
+    // Iniciar loading
     setLoading(true);
     setError(null);
+    
+    logService.info('useActivities: Iniciando busca de atividades para aulas');
 
-    try {
-      const schoolId = schoolData.id;
-      const classId  = classData.id;
+    // Criar controller para abortar operações se o componente for desmontado
+    const controller = new AbortController();
+    const signal = controller.signal;
 
-      const arrays = await Promise.all(
-        lessons.map(lesson => {
-          const ref = collection(
-            db,
-            'schools',
-            schoolId,
-            'classes',
-            classId,
-            'lessons',
-            lesson.id,
-            'activities'
-          );
-          return getDocs(ref).then(snap =>
-            snap.docs.map(docSnap => {
-              const data = docSnap.data();
-              return {
-                id: docSnap.id,
-                lessonId: lesson.id,
-                // normaliza timestamps
-                startDate: data.startDate?.toDate?.().toISOString() || null,
-                endDate:   data.endDate?.toDate?.().toISOString()   || null,
-                createdAt: data.createdAt?.toDate?.().toISOString() || null,
-                score:     data.score ?? null,
-                class:     data.class   || { id: classId, name: classData.name },
-                subject:   data.subject || null,
-                ...data
-              };
-            })
-          );
-        })
-      );
+    // Array para armazenar listeners/unsubscribes
+    const unsubscribes = [];
 
-      // 2) Achata e ordena apenas uma vez
-      const allActs = arrays.flat();
-      allActs.sort((a, b) =>
-        new Date(b.startDate || 0) - new Date(a.startDate || 0)
-      );
+    // Função para combinar e ordenar atividades de todas as aulas
+    const updateActivitiesList = (lessonActivitiesMap) => {
+      // Converter o mapa em um array plano
+      let allActs = [];
+      lessonActivitiesMap.forEach(activities => {
+        allActs = [...allActs, ...activities];
+      });
 
-      setActivities(allActs);
-    } catch (err) {
-      setError(`Erro ao buscar atividades: ${err.message}`);
-    } finally {
+      // Ordenar - mais recentes primeiro
+      allActs.sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0));
+      
+      logService.debug(`useActivities: Lista atualizada com ${allActs.length} atividades`);
+      
+      // Atualizar estado
+      setAllActivities(allActs);
       setLoading(false);
-    }
-  }, [
-    userData,
-    schoolData?.id,
-    classData?.id,
-    lessons,
-    lessonsLoading
-  ]);
+    };
 
-  // 3) Chama sempre que dependencies mudarem
-  useEffect(() => {
-    fetchActivities();
-  }, [fetchActivities]);
+    // Map para armazenar atividades de cada aula
+    const activitiesByLesson = new Map();
+    
+    // Configurar listeners para cada aula
+    logService.debug(`useActivities: Configurando listeners para ${lessons.length} aulas`);
+    
+    lessons.forEach(lesson => {
+      // Se já estiver abortado, não criar mais listeners
+      if (signal.aborted) return;
 
-  // 4) Derivados memorizados
+      const schoolId = schoolData.id;
+      const classId = classData.id;
+      const lessonId = lesson.id;
+
+      // Inicializar a entrada do mapa para esta aula
+      activitiesByLesson.set(lessonId, []);
+
+      // Referência da coleção de atividades
+      const activitiesCollection = activityService.getActivitiesCollection(
+        schoolId,
+        classId,
+        lessonId
+      );
+
+      logService.debug(`useActivities: Criando listener para aula ${lessonId}`);
+
+      // Criar listener para esta coleção de atividades
+      const unsubscribe = onSnapshot(
+        activitiesCollection,
+        snapshot => {
+          // Se abortado, não processar
+          if (signal.aborted) return;
+
+          // Processar os documentos
+          logService.debug(`useActivities: Recebidos ${snapshot.docs.length} documentos para aula ${lessonId}`);
+          
+          const activities = snapshot.docs.map(docSnap => 
+            activityService.normalizeActivity(docSnap, lessonId, classData)
+          );
+
+          // Atualizar o mapa
+          activitiesByLesson.set(lessonId, activities);
+
+          // Atualizar a lista completa
+          updateActivitiesList(activitiesByLesson);
+        },
+        error => {
+          // Se abortado, não processar
+          if (signal.aborted) return;
+
+          logService.error(`Erro ao buscar atividades para aula ${lessonId}:`, error);
+          // Em caso de erro, manter as atividades anteriores para esta aula
+          updateActivitiesList(activitiesByLesson);
+        }
+      );
+
+      // Armazenar o unsubscribe para limpeza posterior
+      unsubscribes.push(unsubscribe);
+    });
+
+    // Cleanup - remover todos os listeners quando o componente desmontar
+    return () => {
+      logService.debug(`useActivities: Limpando ${unsubscribes.length} listeners`);
+      controller.abort();
+      unsubscribes.forEach(unsubscribe => unsubscribe());
+    };
+  }, [userData, schoolData?.id, classData?.id, lessons, lessonsLoading]);
+
+  // Derivados memorizados - listas filtradas de atividades
   const pendingActivities = useMemo(
-    () => activities.filter(a => a.score == null),
-    [activities]
-  );
-  const completedActivities = useMemo(
-    () => activities.filter(a => a.score != null),
-    [activities]
+    () => allActivities.filter(a => a.score == null),
+    [allActivities]
   );
 
+  const completedActivities = useMemo(
+    () => allActivities.filter(a => a.score != null),
+    [allActivities]
+  );
+
+  // Função para verificar se uma atividade está atrasada - usando serviço
   const isActivityLate = useCallback(
-    activity =>
-      activity.endDate &&
-      new Date(activity.endDate) < new Date() &&
-      activity.score == null,
+    activity => activityService.isActivityLate(activity),
     []
   );
+
+  // Função para obter atividades atrasadas
   const getLateActivities = useCallback(
     () => pendingActivities.filter(isActivityLate),
     [pendingActivities, isActivityLate]
   );
-  const getUpcomingActivities = useCallback(() => {
-    const today = new Date();
-    const in3   = new Date();
-    in3.setDate(today.getDate() + 3);
-    return pendingActivities.filter(a =>
-      a.endDate &&
-      new Date(a.endDate) > today &&
-      new Date(a.endDate) <= in3
-    );
-  }, [pendingActivities]);
 
-  // 5) Unifica marcar concluída/pendente
+  // Função para obter atividades próximas
+  const getUpcomingActivities = useCallback(
+    () => activityService.getUpcomingActivities(pendingActivities),
+    [pendingActivities]
+  );
+
+  // Função para recarregar todas as atividades
+  const refreshActivities = useCallback(() => {
+    if (
+      !userData ||
+      !schoolData?.id ||
+      !classData?.id ||
+      lessonsLoading ||
+      !lessons.length
+    ) {
+      logService.warn('Não é possível recarregar atividades: dados insuficientes');
+      return;
+    }
+
+    logService.info('Recarregando atividades...');
+    setLoading(true);
+    // O efeito será executado novamente automaticamente
+  }, [userData, schoolData?.id, classData?.id, lessons, lessonsLoading]);
+
+  // Função para marcar atividade como concluída/pendente
   const toggleActivity = useCallback(
     async (activity, defaultScore = 10) => {
-      if (!activity?.id) {
+      if (!activity?.id || !activity?.lessonId) {
         setError('Dados insuficientes para atualizar atividade');
         return false;
       }
+
       try {
+        // Obter IDs necessários
+        const schoolId = activity.class?.id || schoolData?.id;
+        const classId = activity.class?.id || classData?.id;
+        const lessonId = activity.lessonId;
+        const activityId = activity.id;
+
+        if (!schoolId || !classId || !lessonId || !activityId) {
+          setError('IDs incompletos para atualizar atividade');
+          return false;
+        }
+        
+        logService.info(`Alterando status da atividade ${activityId}`);
+
+        // Referenciar o documento
         const ref = doc(
           db,
           'schools',
-          activity.class.id,   // ou activity.schoolId, se existir
+          schoolId,
           'classes',
-          activity.class.id,
+          classId,
           'lessons',
-          activity.lessonId,
+          lessonId,
           'activities',
-          activity.id
+          activityId
         );
+
+        // Definir novo score (alterna entre valor ou null)
         const newScore = activity.score == null ? defaultScore : null;
         await updateDoc(ref, { score: newScore });
-        // Nota: onSnapshot não está ativo aqui, então refetch manual:
-        await fetchActivities();
+        
+        logService.debug(`Atividade ${activityId} atualizada com sucesso. Score: ${newScore}`);
+
+        // Não precisamos fazer refresh manual pois os listeners detectarão a mudança
         return true;
       } catch (err) {
+        logService.error("Erro ao atualizar atividade:", err);
         setError(`Erro ao atualizar atividade: ${err.message}`);
         return false;
       }
     },
-    [fetchActivities]
+    [schoolData?.id, classData?.id]
   );
 
-  const value = useMemo(
+  // Memorizar o valor do contexto para evitar re-renderizações
+  const contextValue = useMemo(
     () => ({
-      activities,
+      activities: allActivities,
       pendingActivities,
       completedActivities,
       loading,
@@ -176,10 +275,10 @@ export const ActivitiesProvider = ({ children }) => {
       getUpcomingActivities,
       isActivityLate,
       toggleActivity,
-      refreshActivities: fetchActivities
+      refreshActivities
     }),
     [
-      activities,
+      allActivities,
       pendingActivities,
       completedActivities,
       loading,
@@ -188,15 +287,19 @@ export const ActivitiesProvider = ({ children }) => {
       getUpcomingActivities,
       isActivityLate,
       toggleActivity,
-      fetchActivities
+      refreshActivities
     ]
   );
 
   return (
-    <ActivitiesContext.Provider value={value}>
+    <ActivitiesContext.Provider value={contextValue}>
       {children}
     </ActivitiesContext.Provider>
   );
+};
+
+ActivitiesProvider.propTypes = {
+  children: PropTypes.node.isRequired
 };
 
 export const useActivities = () => {

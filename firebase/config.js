@@ -2,9 +2,10 @@ import { getApps, initializeApp } from 'firebase/app';
 import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
-// Configuração do Firebase com valores diretos
+// Configuração do Firebase diretamente no código
+// Isso garante que tudo funcione corretamente, mesmo sem variáveis de ambiente
 const firebaseConfig = {
   apiKey: "AIzaSyCDlgPjZGpQmbkrr3OKEhW95gkbs2Xsrko",
   authDomain: "inteligenciaapp-520e3.firebaseapp.com",
@@ -19,7 +20,7 @@ const firebaseConfig = {
 // Inicialize o Firebase apenas se não existir uma instância
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage)
+  persistence: getReactNativePersistence(SecureStore)
 });
 const db = getFirestore(app);
 const storage = getStorage(app);

@@ -1,6 +1,6 @@
 // src/services/authStorage.js
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { REMEMBER_ME_KEY } from '../constants/auth';
 
 const USER_KEY = 'authUser';
@@ -9,8 +9,8 @@ const USER_DATA_KEY = 'authUserData';
 const saveUserToStorage = async (user, userData, rememberMe = true) => {
   if (!rememberMe) return;
   try {
-    await AsyncStorage.setItem(USER_KEY, JSON.stringify(user));
-    await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+    await SecureStore.setItemAsync(USER_DATA_KEY, JSON.stringify(userData));
   } catch (error) {
     console.error('Erro ao salvar usuário no AsyncStorage:', error);
   }
@@ -18,11 +18,11 @@ const saveUserToStorage = async (user, userData, rememberMe = true) => {
 
 const loadUserData = async () => {
   try {
-    const rememberMe = await AsyncStorage.getItem(REMEMBER_ME_KEY);
+    const rememberMe = await SecureStore.getItemAsync(REMEMBER_ME_KEY);
     if (rememberMe !== 'true') return { user: null, userData: null };
 
-    const user = await AsyncStorage.getItem(USER_KEY);
-    const userData = await AsyncStorage.getItem(USER_DATA_KEY);
+    const user = await SecureStore.getItemAsync(USER_KEY);
+    const userData = await SecureStore.getItemAsync(USER_DATA_KEY);
 
     return {
       user: user ? JSON.parse(user) : null,
@@ -36,7 +36,11 @@ const loadUserData = async () => {
 
 const clearUserFromStorage = async () => {
   try {
-    await AsyncStorage.multiRemove([USER_KEY, USER_DATA_KEY, REMEMBER_ME_KEY]);
+    await Promise.all([
+      SecureStore.deleteItemAsync(USER_KEY),
+      SecureStore.deleteItemAsync(USER_DATA_KEY),
+      SecureStore.deleteItemAsync(REMEMBER_ME_KEY)
+    ]);
   } catch (error) {
     console.error('Erro ao limpar dados do usuário:', error);
   }
