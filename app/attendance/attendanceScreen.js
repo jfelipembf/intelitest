@@ -4,6 +4,7 @@ import {
   View,
   ScrollView,
   ImageBackground,
+  TouchableOpacity,
 } from "react-native";
 import React, { useState } from "react";
 import { Colors, Fonts, Sizes } from "../../constants/styles";
@@ -40,6 +41,7 @@ const AttendanceScreen = () => {
             contentContainerStyle={{ paddingBottom: Sizes.fixPadding * 2.0 }}
           >
             {calenderView()}
+            <Text style={styles.sectionTitle}>Resumo de Frequência</Text>
             {absentInfo()}
             {festivalAndHolidaysInfo()}
             {halfDaysInfo()}
@@ -56,12 +58,13 @@ const AttendanceScreen = () => {
           ? Object.values(markedDates[currentDataIndex].halfDays).length
           : 0
         : 0;
-    return infoSort({
+    return attendanceCard({
       title: ATTENDANCE_TYPES.HALF_DAY.title,
       count: count,
       bgColor: Colors.lightSecondaryColor,
-      color: Colors.secondaryColor,
-      textStyle: { ...Fonts.secondaryColor15SemiBold },
+      textColor: Colors.secondaryColor,
+      icon: "timelapse",
+      description: `${count} ${count === 1 ? 'dia' : 'dias'} no mês atual`
     });
   }
 
@@ -73,17 +76,14 @@ const AttendanceScreen = () => {
             .length
           : 0
         : 0;
-    return (
-      <View style={{ marginVertical: Sizes.fixPadding + 5.0 }}>
-        {infoSort({
-          title: ATTENDANCE_TYPES.HOLIDAY.title,
-          count: count,
-          bgColor: Colors.lightGreenColor,
-          color: Colors.greenColor,
-          textStyle: { ...Fonts.greenColor15SemiBold },
-        })}
-      </View>
-    );
+    return attendanceCard({
+      title: ATTENDANCE_TYPES.HOLIDAY.title,
+      count: count,
+      bgColor: Colors.lightGreenColor,
+      textColor: Colors.greenColor,
+      icon: "event",
+      description: `${count} ${count === 1 ? 'dia' : 'dias'} no mês atual`
+    });
   }
 
   function absentInfo() {
@@ -93,13 +93,40 @@ const AttendanceScreen = () => {
           ? Object.values(markedDates[currentDataIndex].absentDays).length
           : 0
         : 0;
-    return infoSort({
+    return attendanceCard({
       title: ATTENDANCE_TYPES.ABSENT.title,
       count: count,
       bgColor: Colors.lightRedColor,
-      color: Colors.redColor,
-      textStyle: { ...Fonts.redColor15SemiBold },
+      textColor: Colors.redColor,
+      icon: "cancel",
+      description: `${count} ${count === 1 ? 'dia' : 'dias'} no mês atual`
     });
+  }
+
+  function attendanceCard({ title, count, bgColor, textColor, icon, description }) {
+    return (
+      <View style={styles.attendanceCardWrapStyle}>
+        <View style={styles.headerRow}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View style={[styles.iconContainer, { backgroundColor: bgColor }]}>
+              <MaterialIcons name={icon} size={20} color={textColor} />
+            </View>
+            <Text style={{ ...Fonts.blackColor16SemiBold, marginLeft: Sizes.fixPadding }}>
+              {title}
+            </Text>
+          </View>
+          <View style={[styles.countBadge, { backgroundColor: bgColor }]}>
+            <Text style={{ color: textColor, ...Fonts.blackColor16SemiBold }}>
+              {padZero(count)}
+            </Text>
+          </View>
+        </View>
+        
+        <Text style={{ ...Fonts.grayColor14Regular, marginTop: Sizes.fixPadding }}>
+          {description}
+        </Text>
+      </View>
+    );
   }
 
   function infoSort({ title, count, bgColor, color, textStyle }) {
@@ -253,6 +280,36 @@ const styles = StyleSheet.create({
     marginBottom: -(Sizes.fixPadding * 5.0),
     overflow: "hidden",
     paddingBottom: Sizes.fixPadding * 5.0,
+  },
+  sectionTitle: {
+    ...Fonts.blackColor18SemiBold,
+    marginHorizontal: Sizes.fixPadding * 2.0,
+    marginBottom: Sizes.fixPadding,
+  },
+  attendanceCardWrapStyle: {
+    borderColor: Colors.lightGrayColor,
+    borderWidth: 1.0,
+    borderRadius: Sizes.fixPadding,
+    marginHorizontal: Sizes.fixPadding * 2.0,
+    marginBottom: Sizes.fixPadding * 2.0,
+    padding: Sizes.fixPadding + 5.0,
+  },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  countBadge: {
+    paddingHorizontal: Sizes.fixPadding,
+    paddingVertical: Sizes.fixPadding - 5.0,
+    borderRadius: Sizes.fixPadding - 4.0,
   },
   countWrapStyle: {
     width: 32.0,

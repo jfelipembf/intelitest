@@ -1,69 +1,128 @@
-import { StyleSheet, Text, View, ImageBackground, Image, TouchableOpacity, FlatList, } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, View, ImageBackground, Image, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native'
+import React, { useState, useMemo, useEffect } from 'react'
 import { Colors, Fonts, Sizes } from '../../constants/styles'
 import { MaterialIcons } from '@expo/vector-icons';
 import MyStatusBar from '../../components/myStatusBar';
 import { useNavigation } from 'expo-router';
+import { useSchool } from '../../hooks/useSchool';
+import { useLessons } from '../../hooks/useLessons';
+import logService from '../../utils/logService';
 
-const subjectsList = ['Todos', 'Mat', 'Ciên', 'Port', 'Eco', 'Cont', 'Info'];
-
-const facultiesList = [
-    {
-        id: '1',
-        facultyName: 'Leslie Alexander',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Mat', 'Ciên', 'Eco'],
-        facultyImage: require('../../assets/images/faculties/faculty1.png')
-    },
-    {
-        id: '2',
-        facultyName: 'Brooklyn Simmons',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Cont', 'Mat', 'Ciên'],
-        facultyImage: require('../../assets/images/faculties/faculty2.png')
-    },
-    {
-        id: '3',
-        facultyName: 'Jacob Jones',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Port', 'Info'],
-        facultyImage: require('../../assets/images/faculties/faculty3.png')
-    },
-    {
-        id: '4',
-        facultyName: 'Wade Warren',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Eco', 'Ciên', 'Port'],
-        facultyImage: require('../../assets/images/faculties/faculty4.png')
-    },
-    {
-        id: '5',
-        facultyName: 'Marvin McKinney',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Mat', 'Cont'],
-        facultyImage: require('../../assets/images/faculties/faculty5.png')
-    },
-    {
-        id: '6',
-        facultyName: 'Bessie Cooper',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Ciên', 'Port'],
-        facultyImage: require('../../assets/images/faculties/faculty6.png')
-    },
-    {
-        id: '7',
-        facultyName: 'Devon Lane',
-        description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Porta elementum elementum nisl sagittis.',
-        subjectsKnown: ['Mat', 'Eco'],
-        facultyImage: require('../../assets/images/faculties/faculty7.png')
-    },
+// Lista de imagens de professores padrão (para usar quando não há foto)
+const DEFAULT_TEACHER_IMAGES = [
+  require('../../assets/images/faculties/faculty1.png'),
+  require('../../assets/images/faculties/faculty2.png'),
+  require('../../assets/images/faculties/faculty3.png'),
+  require('../../assets/images/faculties/faculty4.png'),
+  require('../../assets/images/faculties/faculty5.png'),
+  require('../../assets/images/faculties/faculty6.png'),
+  require('../../assets/images/faculties/faculty7.png')
 ];
 
 const FacultiesScreen = () => {
-
     const navigation = useNavigation();
+    const { loading: schoolLoading } = useSchool();
+    const { lessons, loading: lessonsLoading } = useLessons();
 
     const [selectedSubjectIndex, setSelectedSubjectIndex] = useState(0);
+    const [subjectsList, setSubjectsList] = useState(['Todos']);
+    const [teachersWithSubjects, setTeachersWithSubjects] = useState([]);
+
+    // Extrair professores diretamente das aulas
+    useEffect(() => {
+        if (lessons && lessons.length > 0) {
+            try {
+                logService.debug('Extraindo professores das aulas', { 
+                    lessonsCount: lessons.length
+                });
+
+                // Usar um Map para armazenar professores únicos por ID
+                const teachersMap = new Map();
+                
+                // Para cada aula, extrair informações do professor
+                lessons.forEach((lesson, index) => {
+                    if (lesson.teacher && lesson.teacher.value && lesson.subject) {
+                        const teacherId = lesson.teacher.value;
+                        
+                        // Se ainda não temos este professor, adicioná-lo ao Map
+                        if (!teachersMap.has(teacherId)) {
+                            // Escolher uma imagem padrão baseada no índice para variar as imagens
+                            const defaultImageIndex = index % DEFAULT_TEACHER_IMAGES.length;
+                            
+                            teachersMap.set(teacherId, {
+                                id: teacherId,
+                                // Se teacher já tiver um nome definido, usar esse nome
+                                name: lesson.teacher.label,
+                                // Inicializar o conjunto de disciplinas que este professor leciona
+                                subjects: new Set([lesson.subject])
+                            });
+                        } else {
+                            // Adicionar a disciplina atual ao conjunto de disciplinas deste professor
+                            teachersMap.get(teacherId).subjects.add(lesson.subject);
+                        }
+                    }
+                });
+                
+                // Extrair lista única de todas as disciplinas
+                const allSubjects = new Set(['Todos']);
+                teachersMap.forEach(teacher => {
+                    teacher.subjects.forEach(subject => allSubjects.add(subject));
+                });
+                
+                // Converter o Map de professores para um array com o formato necessário
+                const teachersData = Array.from(teachersMap.values()).map((teacher, index) => {
+                    // Escolher uma imagem padrão baseada no índice para variar as imagens
+                    const defaultImageIndex = index % DEFAULT_TEACHER_IMAGES.length;
+                    
+                    return {
+                        id: teacher.id,
+                        facultyName: teacher.name || 'Professor não identificado',
+                        description: `Professor de ${Array.from(teacher.subjects).join(', ')}`,
+                        subjectsKnown: Array.from(teacher.subjects),
+                        facultyImage: DEFAULT_TEACHER_IMAGES[defaultImageIndex],
+                        email: '', // Não temos email a partir das aulas
+                        phone: '', // Não temos telefone a partir das aulas
+                    };
+                });
+                
+                // Atualizar estado com os dados processados
+                setSubjectsList(['Todos', ...Array.from(allSubjects).filter(s => s !== 'Todos')]);
+                setTeachersWithSubjects(teachersData);
+                
+                logService.debug('Professores e disciplinas processados', { 
+                    teachersCount: teachersData.length,
+                    uniqueSubjects: allSubjects.size 
+                });
+            } catch (error) {
+                logService.error('Erro ao processar professores das aulas', error);
+            }
+        }
+    }, [lessons]);
+
+    // Filtrar professores pela disciplina selecionada
+    const filteredTeachers = useMemo(() => {
+        if (selectedSubjectIndex === 0) {
+            // Caso "Todos" esteja selecionado
+            return teachersWithSubjects;
+        } else {
+            const selectedSubject = subjectsList[selectedSubjectIndex];
+            return teachersWithSubjects.filter(teacher => 
+                teacher.subjectsKnown.includes(selectedSubject)
+            );
+        }
+    }, [teachersWithSubjects, selectedSubjectIndex, subjectsList]);
+
+    // Renderizar tela de carregamento se necessário
+    if (lessonsLoading || schoolLoading) {
+        return (
+            <View style={[styles.container, styles.loadingContainer]}>
+                <ActivityIndicator size="large" color={Colors.primaryColor} />
+                <Text style={{ ...Fonts.grayColor16Medium, marginTop: Sizes.fixPadding }}>
+                    Carregando professores...
+                </Text>
+            </View>
+        );
+    }
 
     return (
         <View style={{ flex: 1, backgroundColor: Colors.primaryColor }}>
@@ -84,7 +143,18 @@ const FacultiesScreen = () => {
     )
 
     function facultiesInfo() {
-        const displayFaculties = facultiesList.filter((item) => item.subjectsKnown.includes(subjectsList[selectedSubjectIndex]));
+        // Verificar se não há professores para mostrar
+        if (filteredTeachers.length === 0) {
+            return (
+                <View style={styles.emptyContainer}>
+                    <MaterialIcons name="person-outline" size={50} color={Colors.grayColor} />
+                    <Text style={{ ...Fonts.grayColor16Medium, marginTop: Sizes.fixPadding, textAlign: 'center' }}>
+                        Nenhum professor encontrado{"\n"}para esta disciplina
+                    </Text>
+                </View>
+            );
+        }
+        
         const renderItem = ({ item }) => (
             <View style={styles.infoWrapStyle}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -101,11 +171,16 @@ const FacultiesScreen = () => {
                         >
                             {item.description}
                         </Text>
+                        {item.email ? (
+                            <Text style={{ ...Fonts.grayColor13Regular, marginTop: Sizes.fixPadding - 8.0 }}>
+                                {item.email}
+                            </Text>
+                        ) : null}
                     </View>
                     <View style={{ marginLeft: Sizes.fixPadding }}>
                         <Image
                             source={item.facultyImage}
-                            style={{ width: 60.0, height: 60.0, borderRadius: 30.0 }}
+                            style={styles.teacherImageStyle}
                         />
                         <TouchableOpacity
                             activeOpacity={0.8}
@@ -124,17 +199,24 @@ const FacultiesScreen = () => {
                 </Text>
             </View>
         )
+        
         return (
             <FlatList
-                data={displayFaculties.length == 0 ? facultiesList : displayFaculties}
+                data={filteredTeachers}
                 keyExtractor={(item) => `${item.id}`}
                 renderItem={renderItem}
                 showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: Sizes.fixPadding * 2.0 }}
             />
         )
     }
 
     function subjects() {
+        // Se não temos disciplinas suficientes, não mostrar filtros
+        if (subjectsList.length <= 1) {
+            return null;
+        }
+        
         const renderItem = ({ item, index }) => (
             <TouchableOpacity
                 activeOpacity={0.8}
@@ -151,6 +233,7 @@ const FacultiesScreen = () => {
                 </Text>
             </TouchableOpacity>
         )
+        
         return (
             <View style={{ ...styles.allSubjectsWrapStyle }}>
                 <FlatList
@@ -179,6 +262,20 @@ const FacultiesScreen = () => {
 export default FacultiesScreen
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1, 
+        backgroundColor: Colors.whiteColor
+    },
+    loadingContainer: {
+        justifyContent: 'center', 
+        alignItems: 'center'
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingTop: Sizes.fixPadding * 10,
+    },
     headerWrapStyle: {
         marginVertical: Sizes.fixPadding * 3.0,
         marginHorizontal: Sizes.fixPadding * 2.0,
@@ -223,5 +320,11 @@ const styles = StyleSheet.create({
         borderRadius: Sizes.fixPadding,
         paddingHorizontal: Sizes.fixPadding,
         paddingVertical: Sizes.fixPadding - 7.0,
+    },
+    teacherImageStyle: {
+        width: 60.0, 
+        height: 60.0, 
+        borderRadius: 30.0,
+        backgroundColor: Colors.lightGrayColor
     }
 })
