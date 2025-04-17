@@ -8,6 +8,8 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import * as SecureStore from 'expo-secure-store';
+import authStorage from '../services/authStorage';
+import logService from '../utils/logService';
 
 // Importando constantes de autenticação
 import { 
@@ -34,96 +36,13 @@ const getErrorMessage = (errorCode) => {
   return ERROR_MESSAGES[errorCode] || ERROR_MESSAGES.default;
 };
 
-// Service para armazenamento de dados do usuário
-const storageService = {
-  // Função para salvar dados do usuário de forma segura
-  saveUserToStorage: async (user, userData) => {
-    try {
-      // Convertemos o objeto user para um formato serializável
-      const serializedUser = {
-        uid: user.uid,
-        email: user.email,
-        emailVerified: user.emailVerified,
-        displayName: user.displayName,
-        photoURL: user.photoURL,
-      };
-      
-      // Usar apenas SecureStore para todas as operações de armazenamento
-      const operations = [
-        SecureStore.setItemAsync(USER_AUTH_KEY, JSON.stringify(serializedUser)),
-        SecureStore.setItemAsync(USER_DATA_KEY, JSON.stringify(userData)),
-        SecureStore.setItemAsync(REMEMBER_ME_KEY, 'true'),
-        SecureStore.setItemAsync(LAST_LOGIN_TIME_KEY, Date.now().toString())
-      ];
-      
-      await Promise.all(operations);
-    } catch (error) {
-      console.error("Erro ao salvar dados do usuário:", error);
-    }
-  },
-
-  // Função para limpar dados do usuário
-  clearUserFromStorage: async () => {
-    try {
-      const operations = [
-        SecureStore.deleteItemAsync(USER_AUTH_KEY),
-        SecureStore.deleteItemAsync(USER_DATA_KEY),
-        SecureStore.deleteItemAsync(REMEMBER_ME_KEY),
-        SecureStore.deleteItemAsync(LAST_LOGIN_TIME_KEY)
-      ];
-      
-      await Promise.all(operations);
-    } catch (error) {
-      console.error("Erro ao remover dados do usuário:", error);
-    }
-  },
-
+// Estender o authStorage com funções adicionais específicas para o useAuth
+const authStorageExtended = {
+  ...authStorage,
+  
   // Verifica se um login salvo está expirado
   isLoginExpired: (lastLoginTime) => {
     return lastLoginTime && (Date.now() - parseInt(lastLoginTime)) > LOGIN_EXPIRATION_MS;
-  },
-
-  // Carrega dados do usuário do storage
-  loadUserData: async () => {
-    try {
-      const [
-        storedUserJSON, 
-        storedUserDataJSON, 
-        rememberMeFlag, 
-        lastLoginTime
-      ] = await Promise.all([
-        SecureStore.getItemAsync(USER_AUTH_KEY),
-        SecureStore.getItemAsync(USER_DATA_KEY),
-        SecureStore.getItemAsync(REMEMBER_ME_KEY),
-        SecureStore.getItemAsync(LAST_LOGIN_TIME_KEY)
-      ]);
-
-      // Verificar se o login expirou
-      const loginExpired = storageService.isLoginExpired(lastLoginTime);
-      
-      // Se o rememberMe não estiver ativo ou o login expirou, não restaurar
-      if (rememberMeFlag !== 'true' || loginExpired) {
-        await storageService.clearUserFromStorage();
-        return { user: null, userData: null };
-      }
-
-      if (storedUserJSON && storedUserDataJSON) {
-        const storedUser = JSON.parse(storedUserJSON);
-        const storedUserData = JSON.parse(storedUserDataJSON);
-        
-        // Verificar se os dados estão completos e o usuário é aluno
-        if (storedUser && storedUserData && storedUserData.role === REQUIRED_ROLE) {
-          return { user: storedUser, userData: storedUserData };
-        } else {
-          await storageService.clearUserFromStorage();
-        }
-      }
-      return { user: null, userData: null };
-    } catch (error) {
-      console.error("Erro ao carregar dados do SecureStore:", error);
-      await storageService.clearUserFromStorage();
-      return { user: null, userData: null };
-    }
   },
 
   // Salva a configuração de "lembrar-me"
@@ -134,6 +53,16 @@ const storageService = {
   // Verifica se "lembrar-me" está ativo
   isRememberMeActive: async () => {
     return await SecureStore.getItemAsync(REMEMBER_ME_KEY) === 'true';
+  },
+  
+  // Salva o tempo do último login
+  saveLastLoginTime: async () => {
+    await SecureStore.setItemAsync(LAST_LOGIN_TIME_KEY, Date.now().toString());
+  },
+  
+  // Obtém o tempo do último login
+  getLastLoginTime: async () => {
+    return await SecureStore.getItemAsync(LAST_LOGIN_TIME_KEY);
   }
 };
 
@@ -161,7 +90,7 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
     } catch (error) {
-      console.error("Erro ao buscar dados do usuário:", error);
+      logService.error("Erro ao buscar dados do usuário:", error);
       return null;
     }
   };
@@ -177,14 +106,29 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       if (signal.aborted) return;
       
-      const { user: storedUser, userData: storedUserData } = await storageService.loadUserData();
-      
-      if (!signal.aborted && storedUser && storedUserData) {
-        setUser(storedUser);
-        setUserData(storedUserData);
+      try {
+        // Carregar dados do usuário salvos
+        const { user: storedUser, userData: storedUserData } = await authStorage.loadUserData();
+        
+        // Verificar se o login expirou
+        const lastLoginTime = await authStorageExtended.getLastLoginTime();
+        const loginExpired = authStorageExtended.isLoginExpired(lastLoginTime);
+        
+        if (loginExpired) {
+          await authStorage.clearUserFromStorage();
+          if (!signal.aborted) {
+            setUser(null);
+            setUserData(null);
+          }
+        } else if (!signal.aborted && storedUser && storedUserData) {
+          setUser(storedUser);
+          setUserData(storedUserData);
+        }
+      } catch (error) {
+        logService.error("Erro ao inicializar autenticação:", error);
+      } finally {
+        if (!signal.aborted) setAuthLoading(false);
       }
-      
-      if (!signal.aborted) setAuthLoading(false);
     };
 
     // Inicializar com dados salvos
@@ -207,9 +151,10 @@ export const AuthProvider = ({ children }) => {
               }
               
               // Só salvar no storage se "rememberMe" estiver ativo
-              const rememberMeActive = await storageService.isRememberMeActive();
+              const rememberMeActive = await authStorageExtended.isRememberMeActive();
               if (rememberMeActive && !signal.aborted) {
-                await storageService.saveUserToStorage(firebaseUser, userData);
+                await authStorage.saveUserToStorage(firebaseUser, userData);
+                await authStorageExtended.saveLastLoginTime();
               }
             } else {
               // Usuário não é aluno, fazer logout
@@ -218,7 +163,7 @@ export const AuthProvider = ({ children }) => {
                 setUser(null);
                 setUserData(null);
               }
-              await storageService.clearUserFromStorage();
+              await authStorage.clearUserFromStorage();
             }
           } else {
             // Dados do usuário não encontrados
@@ -226,17 +171,17 @@ export const AuthProvider = ({ children }) => {
               setUser(null);
               setUserData(null);
             }
-            await storageService.clearUserFromStorage();
+            await authStorage.clearUserFromStorage();
           }
         }
       } catch (error) {
-        console.error("Erro ao processar autenticação do Firebase:", error);
+        logService.error("Erro ao processar autenticação do Firebase:", error);
         if (!signal.aborted) {
           setUser(null);
           setUserData(null);
           setAuthLoading(false);
         }
-        await storageService.clearUserFromStorage();
+        await authStorage.clearUserFromStorage();
       }
     });
 
@@ -249,105 +194,93 @@ export const AuthProvider = ({ children }) => {
 
   // Login com email e senha
   const login = async (email, password, rememberMe) => {
-    // Validação de email
-    if (!isValidEmail(email)) {
-      return { success: false, error: "Formato de e-mail inválido." };
-    }
-
     setAuthError(null);
     setOperationLoading(true);
     
     try {
-      // Autenticação no Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      
-      // Buscar dados do usuário
-      const userDataFromDB = await fetchUserData(firebaseUser.uid);
-      
-      // Verificar se é um aluno
-      if (!isValidUserRole(userDataFromDB)) {
-        await signOut(auth);
-        setOperationLoading(false);
-        return { 
-          success: false, 
-          error: "Acesso negado. Este aplicativo é exclusivo para alunos." 
-        };
+      // Validar email
+      if (!isValidEmail(email)) {
+        throw new Error("EMAIL_INVALID");
       }
       
       // Salvar preferência de "lembrar-me"
-      await storageService.saveRememberMePreference(rememberMe);
+      await authStorageExtended.saveRememberMePreference(rememberMe);
       
-      // Se "lembrar-me" estiver ativo, salvar dados do usuário no storage
-      if (rememberMe) {
-        await storageService.saveUserToStorage(firebaseUser, userDataFromDB);
+      // Realizar login no Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      
+      // Buscar dados adicionais
+      const userData = await fetchUserData(firebaseUser.uid);
+      
+      if (!userData) {
+        throw new Error("USER_DATA_NOT_FOUND");
       }
       
-      // Atualizar estado
+      if (!isValidUserRole(userData)) {
+        await signOut(auth);
+        throw new Error("INVALID_ROLE");
+      }
+      
+      // Atualizar estados
       setUser(firebaseUser);
-      setUserData(userDataFromDB);
-      setOperationLoading(false);
+      setUserData(userData);
+      
+      // Salvar dados no storage se "lembrar-me" estiver ativo
+      if (rememberMe) {
+        await authStorage.saveUserToStorage(firebaseUser, userData, true);
+        await authStorageExtended.saveLastLoginTime();
+      }
       
       return { success: true };
     } catch (error) {
-      console.error("Erro no login:", error);
+      // Tratar erros de autenticação
+      const errorCode = error.code || error.message;
+      const errorMessage = getErrorMessage(errorCode);
       
-      const errorMessage = getErrorMessage(error.code);
       setAuthError(errorMessage);
-      setOperationLoading(false);
-      
-      return { success: false, error: errorMessage };
-    }
-  };
-
-  // Logout
-  const logout = async () => {
-    setOperationLoading(true);
-    
-    try {
-      // Fazer logout no Firebase
-      await signOut(auth);
-      
-      // Limpar dados do storage
-      await storageService.clearUserFromStorage();
-      
-      // Atualizar estado
-      setUser(null);
-      setUserData(null);
-      setAuthError(null);
-      
-      return { success: true };
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
-      
-      const errorMessage = getErrorMessage(error.code);
-      setAuthError(errorMessage);
-      
       return { success: false, error: errorMessage };
     } finally {
       setOperationLoading(false);
     }
   };
 
-  // Redefinir senha
-  const resetPassword = async (email) => {
-    if (!isValidEmail(email)) {
-      return { success: false, error: "Formato de e-mail inválido." };
+  // Logout do usuário
+  const logout = async () => {
+    setOperationLoading(true);
+    try {
+      await signOut(auth);
+      setUser(null);
+      setUserData(null);
+      await authStorage.clearUserFromStorage();
+      return { success: true };
+    } catch (error) {
+      const errorMessage = getErrorMessage(error.code);
+      setAuthError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setOperationLoading(false);
     }
-    
+  };
+
+  // Função para recuperação de senha
+  const resetPassword = async (email) => {
+    setAuthError(null);
     setOperationLoading(true);
     
     try {
+      if (!isValidEmail(email)) {
+        throw new Error("EMAIL_INVALID");
+      }
+      
       await sendPasswordResetEmail(auth, email);
-      setOperationLoading(false);
       return { success: true };
     } catch (error) {
-      console.error("Erro ao enviar e-mail de redefinição:", error);
-      
       const errorMessage = getErrorMessage(error.code);
-      setOperationLoading(false);
-      
+      setAuthError(errorMessage);
       return { success: false, error: errorMessage };
+    } finally {
+      setOperationLoading(false);
     }
   };
 
@@ -356,31 +289,32 @@ export const AuthProvider = ({ children }) => {
     return !!user && !!userData;
   };
 
+  // Fornecer o contexto com os valores e funções necessárias
+  const authContextValue = {
+    user,
+    userData,
+    authLoading,
+    operationLoading,
+    authError,
+    login,
+    logout,
+    resetPassword,
+    isUserAuthenticated
+  };
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        userData,
-        loading: authLoading || operationLoading,
-        authLoading,
-        operationLoading,
-        authError,
-        login,
-        logout,
-        resetPassword,
-        isUserAuthenticated,
-      }}
-    >
+    <AuthContext.Provider value={authContextValue}>
       {children}
     </AuthContext.Provider>
   );
 };
 
+// Hook para acessar o contexto de autenticação
 export const useAuth = () => {
   const context = useContext(AuthContext);
   
   if (!context) {
-    throw new Error("useAuth deve ser usado dentro de AuthProvider");
+    throw new Error('useAuth deve ser usado dentro de um AuthProvider');
   }
   
   return context;
