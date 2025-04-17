@@ -3,19 +3,36 @@ import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import * as SecureStore from 'expo-secure-store';
+import logService from '../utils/logService';
+import {
+  FIREBASE_API_KEY,
+  FIREBASE_AUTH_DOMAIN,
+  FIREBASE_DATABASE_URL,
+  FIREBASE_PROJECT_ID,
+  FIREBASE_STORAGE_BUCKET,
+  FIREBASE_MESSAGING_SENDER_ID,
+  FIREBASE_APP_ID,
+  FIREBASE_MEASUREMENT_ID
+} from '@env';
 
-// Configuração do Firebase diretamente no código
-// Isso garante que tudo funcione corretamente, mesmo sem variáveis de ambiente
+// Configuração do Firebase usando variáveis de ambiente do arquivo .env
+// Isso reduz os riscos de segurança mantendo as chaves fora do código versionado
 const firebaseConfig = {
-  apiKey: "AIzaSyCDlgPjZGpQmbkrr3OKEhW95gkbs2Xsrko",
-  authDomain: "inteligenciaapp-520e3.firebaseapp.com",
-  databaseURL: "https://inteligenciaapp-520e3.firebaseio.com",
-  projectId: "inteligenciaapp-520e3",
-  storageBucket: "inteligenciaapp-520e3.appspot.com",
-  messagingSenderId: "538089643335",
-  appId: "1:538089643335:web:432d1f0a060c1889d68062",
-  measurementId: "G-TZ1CVDF0ND"
+  apiKey: FIREBASE_API_KEY,
+  authDomain: FIREBASE_AUTH_DOMAIN,
+  databaseURL: FIREBASE_DATABASE_URL,
+  projectId: FIREBASE_PROJECT_ID,
+  storageBucket: FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
+  appId: FIREBASE_APP_ID,
+  measurementId: FIREBASE_MEASUREMENT_ID
 };
+
+// Verificação das configurações para ajudar no diagnóstico de problemas
+if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+  logService.error('Firebase: Configurações incompletas. Verifique seu arquivo .env');
+  throw new Error('Configuração do Firebase incompleta. Verifique o arquivo .env');
+}
 
 // Inicialize o Firebase apenas se não existir uma instância
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
